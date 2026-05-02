@@ -82,7 +82,9 @@ jobs:
           UPX_FLAG=""
           if [[ "${{ runner.os }}" != "macOS" ]]; then
             LTO_FLAG="--lto=yes"
-            UPX_FLAG="--upx"
+            if command -v upx &>/dev/null; then
+              UPX_FLAG="--upx-binary=$(command -v upx)"
+            fi
           fi
 
           python -m nuitka \
