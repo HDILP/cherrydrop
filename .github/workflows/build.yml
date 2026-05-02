@@ -46,8 +46,22 @@ jobs:
           else
             VERSION="0.0.0"
           fi
+
+          # 各平台 Nuitka 模式：macOS 需 --mode=app + --onefile
+          NUITKA_MODE="--mode=onefile"
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            NUITKA_MODE="--mode=app --onefile"
+          fi
+
+          NUITKA_OPTS=""
+          # Windows 需要自动下载依赖分析工具
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            NUITKA_OPTS="--assume-yes-for-downloads"
+          fi
+
           python -m nuitka \
-            --mode=onefile \
+            $NUITKA_MODE \
+            $NUITKA_OPTS \
             --enable-plugin=pyqt5 \
             --follow-imports \
             --include-data-dir=resources/bin=resources/bin \
