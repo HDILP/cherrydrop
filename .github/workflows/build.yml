@@ -120,13 +120,11 @@ jobs:
                find "$APP_DIR" -name '*__mypyc.*' -delete 2>/dev/null || true && \
                mv "$APP_DIR" "CherryDrop.app" && \
                APP="CherryDrop.app/Contents/MacOS" && \
-               # 清理无用 Qt 框架模块（节省 ~50MB）
-               echo ">>> Cleaning up unnecessary Qt frameworks..." && \
-               (cd "$APP" && \
-                rm -rf QtMultimedia QtMultimediaWidgets QtPrintSupport \
-                       QtSvg QtWebSockets QtQuick QtQml QtQmlModels QtDBus) && \
-               # 清理无用 Qt 插件
-               (cd "$APP/PyQt5/qt-plugins" && rm -rf printsupport mediaservice iconengines) && \
+               # NOTE:
+               # 不再手动删除 Qt 框架/插件。此前在 macOS Intel 产物上会触发
+               # "QGuiApplicationPrivate::createPlatformIntegration()" fatal，
+               # 根因是平台插件依赖被过度清理后无法加载。
+               # 为稳定优先，保留 Nuitka 默认收集结果。
                # 只保留当前架构的 aria2 二进制
                BIN_PATH="$APP/resources/bin/darwin" && \
                if [[ "${{ runner.arch }}" == "ARM64" ]]; then \
