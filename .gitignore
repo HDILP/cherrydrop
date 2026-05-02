@@ -20,10 +20,3 @@ Thumbs.db
 settings.json
 aria2.session
 dht.dat
-
-# aria2 binary (built by CI, not committed)
-resources/bin/linux/
-resources/bin/win32/
-resources/bin/win64/
-resources/bin/darwin/
-!resources/bin/*/.gitkeep
