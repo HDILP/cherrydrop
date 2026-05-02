@@ -53,14 +53,14 @@ jobs:
           XZ_DIR=$(brew --prefix xz 2>/dev/null || echo "")
           mkdir -p /tmp/nuitka-dylib-bak
           for f in "$OPENSSL_DIR"/lib/libssl*.dylib "$OPENSSL_DIR"/lib/libcrypto*.dylib; do
-            if [ -f "$f" ]; then
-              cp -L "$f" /tmp/nuitka-dylib-bak/ && echo "Backed up: $(basename $f)" && rm -f "$f"
+            if [ -f "$f" ] || [ -L "$f" ]; then
+              cp -L "$f" /tmp/nuitka-dylib-bak/ 2>/dev/null; rm -f "$f"; echo "Removed: $(basename $f)"
             fi
           done
           if [ -n "$XZ_DIR" ]; then
             for f in "$XZ_DIR"/lib/liblzma*.dylib; do
-              if [ -f "$f" ]; then
-                cp -L "$f" /tmp/nuitka-dylib-bak/ && echo "Backed up: $(basename $f)" && rm -f "$f"
+              if [ -f "$f" ] || [ -L "$f" ]; then
+                cp -L "$f" /tmp/nuitka-dylib-bak/ 2>/dev/null; rm -f "$f"; echo "Removed: $(basename $f)"
               fi
             done
           fi
