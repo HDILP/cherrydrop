@@ -27,7 +27,6 @@ python -m nuitka \
     --nofollow-import-to=PyQt5.QtWebEngine \
     --nofollow-import-to=PyQt5.QtMultimedia \
     --nofollow-import-to=tkinter,unittest,pdb,test,distutils,ensurepip,venv,lib2to3,idlelib,turtle,cgi,smtplib,poplib,imaplib,ftplib,telnetlib,nntplib \
-    --nofollow-import-to=hashlib,_hashlib,lzma,_lzma,ssl,_ssl \
     --include-data-dir="$BIN_DIR" \
     --include-data-file=resources/aria2.conf=resources/aria2.conf \
     --include-data-dir=resources/icons=resources/icons \
