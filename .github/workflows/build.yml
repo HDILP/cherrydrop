@@ -47,9 +47,8 @@ jobs:
             VERSION="0.0.0"
           fi
           python -m nuitka \
-            --standalone \
-            --onefile \
             --mode=app \
+            --onefile \
             --enable-plugin=pyqt5 \
             --follow-imports \
             --include-data-dir=resources/bin=resources/bin \
