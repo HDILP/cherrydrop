@@ -37,28 +37,22 @@ jobs:
 
       - name: Install Nuitka dependencies (macOS)
         if: runner.os == 'macOS'
-        run: |
-          brew install ccache
-          if [[ "${{ runner.arch }}" == "X64" ]]; then
-            brew install openssl@3
-          fi
+        run: brew install ccache
 
-      - name: Hide Homebrew dylibs from Nuitka scanner (Intel macOS)
+      - name: Install uv Python (Intel macOS)
         if: runner.os == 'macOS' && runner.arch == 'X64'
         run: |
-          # Nuitka 4.0.8's dylib scanner FATALs on certain macOS dylib formats (bug #3777).
-          # Workaround: remove dylibs during build so scanner can't find them,
-          # then bundle them into the .app manually after build.
-          mkdir -p /tmp/nuitka-dylib-bak
-          # Remove OpenSSL dylibs + any symlinks (including broken ones)
-          for f in /usr/local/opt/openssl@3/lib/libssl*.dylib /usr/local/opt/openssl@3/lib/libcrypto*.dylib; do
-            if [ -f "$f" ] || [ -L "$f" ]; then
-              cp -L "$f" /tmp/nuitka-dylib-bak/ 2>/dev/null
-              rm -f "$f"
-              echo "Removed: $(basename $f)"
-            fi || true
-          done
-          ls -la /tmp/nuitka-dylib-bak/
+          # Nuitka 4.0.8's dylib scanner FATALs on Homebrew-linked Python (bug #3777).
+          # uv's standalone Python has bundled OpenSSL — no Homebrew dep, no scanner crash.
+          pip install uv
+          uv python install 3.10
+          uv venv --python 3.10
+          source .venv/bin/activate
+          pip install -r requirements.txt
+          pip install nuitka requests
+          # Make uv venv Python default for subsequent steps
+          echo "VIRTUAL_ENV=$(pwd)/.venv" >> $GITHUB_ENV
+          echo "$(pwd)/.venv/bin" >> $GITHUB_PATH
 
       - name: Build with Nuitka
         shell: bash
@@ -139,33 +133,6 @@ jobs:
                else \
                  echo ">>> Intel: removing arm64 aria2" && \
                  rm -f "$BIN_PATH/aria2c-arm64" && \
-                 # Intel macOS: restore dylibs hidden from Nuitka scanner + fix refs
-                 if [ -d /tmp/nuitka-dylib-bak ]; then \
-                   echo ">>> Bundling Homebrew dylibs (hidden from Nuitka during build)" && \
-                   cp /tmp/nuitka-dylib-bak/*.dylib "$APP/" 2>/dev/null || true && \
-                   echo ">>> Fixing dylib references in .so files to @executable_path..." && \
-                   for SO in $(find "$APP" -name '*.so' -type f 2>/dev/null); do \
-                     otool -L "$SO" 2>/dev/null | grep '/Cellar/' | awk '{print $1}' | while read -r OLD; do \
-                       BN=$(basename "$OLD") && \
-                       if [ -f "$APP/$BN" ]; then \
-                         install_name_tool -change "$OLD" "@executable_path/$BN" "$SO" 2>/dev/null && \
-                         echo "    $(basename $SO): $OLD -> @executable_path/$BN"; \
-                       fi; \
-                     done; \
-                   done && \
-                   echo ">>> Fixing dylib self-references..." && \
-                   for DYLIB in "$APP"/*.dylib; do \
-                     [ -f "$DYLIB" ] || continue; \
-                     otool -L "$DYLIB" 2>/dev/null | grep '/Cellar/' | awk '{print $1}' | while read -r OLD; do \
-                       BN=$(basename "$OLD") && \
-                       install_name_tool -change "$OLD" "@executable_path/$BN" "$DYLIB" 2>/dev/null; \
-                     done; \
-                     # Also fix the dylib's own install name
-                     BN=$(basename "$DYLIB") && \
-                     install_name_tool -id "@executable_path/$BN" "$DYLIB" 2>/dev/null || true; \
-                   done && \
-                   echo ">>> Dylib references fixed"; \
-                 fi && \
                  ZIP_NAME="CherryDrop-macOS-x86_64.zip"; \
                fi && \
                zip -r "$ZIP_NAME" "CherryDrop.app" && \
