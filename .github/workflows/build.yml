@@ -33,11 +33,18 @@ jobs:
 
       - name: Install Nuitka dependencies (Linux)
         if: runner.os == 'Linux'
-        run: sudo apt-get install -y patchelf ccache
+        run: |
+          sudo apt-get install -y patchelf ccache upx
 
       - name: Install Nuitka dependencies (macOS)
         if: runner.os == 'macOS'
-        run: brew install ccache
+        run: |
+          brew install ccache upx
+
+      - name: Install Nuitka dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install upx --no-progress -y
 
       - name: Build with Nuitka
         shell: bash
@@ -56,7 +63,7 @@ jobs:
             NUITKA_MODE="--mode=app"
           fi
 
-          # 只打包当前平台对应的 aria2 二进制（节省 ~30MB）
+          # 只打包当前平台对应的 aria2 二进制
           if [[ "${{ runner.os }}" == "Linux" ]]; then
             BIN_DIR="resources/bin/linux=resources/bin/linux"
           elif [[ "${{ runner.os }}" == "macOS" ]]; then
@@ -70,14 +77,31 @@ jobs:
             NUITKA_OPTS="--assume-yes-for-downloads"
           fi
 
+          # 极限体积优化
+          LTO_FLAG=""
+          UPX_FLAG=""
+          if [[ "${{ runner.os }}" != "macOS" ]]; then
+            LTO_FLAG="--lto=yes"
+            UPX_FLAG="--upx"
+          fi
+
           python -m nuitka \
             $NUITKA_MODE \
             $NUITKA_OPTS \
+            $LTO_FLAG \
+            $UPX_FLAG \
+            --strip \
+            --remove-output \
             --enable-plugin=pyqt5 \
+            --noinclude-qt-plugins=sensible,styles,translations \
+            --nofollow-import-to=PyQt5.QtWebEngine \
+            --nofollow-import-to=PyQt5.QtMultimedia \
             --follow-imports \
             --include-data-dir="$BIN_DIR" \
+            --include-data-dir=resources/aria2.conf=resources/aria2.conf \
             --include-data-dir=resources/icons=resources/icons \
             --include-data-dir=resources/themes=resources/themes \
+            --nofollow-import-to=tkinter,unittest,pdb,test,distutils,ensurepip,venv,lib2to3,idlelib,turtle,cgi,smtplib,poplib,imaplib,ftplib,telnetlib,nntplib \
             --output-dir=dist \
             --product-name=CherryDrop \
             --file-version="$VERSION" \
@@ -107,9 +131,7 @@ jobs:
         run: |
           TAG="${{ github.ref_name }}"
           echo "Creating release for tag: $TAG"
-          # 先尝试创建（可能已存在则忽略错误）
           gh release create "$TAG" \
             --title "CherryDrop $TAG" \
             --generate-notes || true
-          # 逐个上传 artifact，错误忽略（可能已上传）
           find artifacts -type f -exec gh release upload "$TAG" {} --clobber \;

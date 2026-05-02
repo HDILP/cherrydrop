@@ -59,6 +59,15 @@ class Aria2Client:
         # 2. fallback: 系统 PATH
         return shutil.which("aria2c")
 
+    def _resources_path(self) -> str:
+        """获取 resources 目录的绝对路径"""
+        import os
+        return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "resources")
+
+    def _conf_path(self) -> str:
+        """获取 aria2.conf 路径"""
+        return os.path.join(self._resources_path(), "aria2.conf")
+
     def _session_path(self) -> str:
         import os
         return os.path.join(
@@ -74,10 +83,12 @@ class Aria2Client:
         )
 
     def _build_aria2_args(self) -> list:
-        """构建 aria2c 命令行参数，包含 BT/DHT 加速优化"""
+        """构建 aria2c 命令行参数（静态参数由 aria2.conf 提供，此处只传动态参数）"""
         args = [
             self._find_aria2_binary() or "aria2c",
-            # ── RPC ──
+            # 加载 motrix-next 配置文件
+            f"--conf-path={self._conf_path()}",
+            # ── RPC（不与 conf 冲突）──
             "--enable-rpc",
             "--rpc-listen-all",
             "--rpc-allow-origin-all",
@@ -91,48 +102,12 @@ class Aria2Client:
         if os.path.exists(self._session_path()):
             args.append(f"--input-file={self._session_path()}")
 
-        # ── 基础下载参数 ──
+        # ── 基础下载参数（覆盖 conf 的默认值）──
         args += [
             f"--max-concurrent-downloads={self.config.get('max_concurrent_downloads', 5)}",
             f"--max-connection-per-server={self.config.get('max_connection_per_server', 16)}",
             f"--split={self.config.get('split', 5)}",
             f"--dir={self.config.get_download_dir()}",
-            # ── BT/DHT 网络优化 (参考 motrix-next) ──
-            "--enable-dht=true",
-            "--enable-dht6=true",
-            "--dht-listen-port=6881-6999",
-            f"--dht-file-path={self._dht_path()}",
-            "--dht-entry-point=dht.transmissionbt.com:6881",
-            "--enable-peer-exchange=true",
-            "--bt-enable-lpd=true",
-            "--listen-port=6881-6999",
-            "--bt-max-peers=128",
-            "--bt-request-peer-speed-limit=100K",    # 防 ISP QoS 限速标记
-            "--bt-detach-seed-only=true",              # 做种不计入活跃任务
-            "--bt-save-metadata=true",                 # 磁力转 .torrent 缓存
-            "--bt-load-saved-metadata=true",           # 重启时加载缓存的 .torrent
-            "--bt-prioritize-piece=head",              # 优先下载首尾块 (预览)
-            "--bt-seed-unverified=true",               # session 恢复时秒做种
-            "--bt-remove-unselected-file=true",        # 清理未选文件
-            "--bt-hash-check-seed=true",               # 完整性检查后继续做种
-            "--peer-id-prefix=-TR3000-",               # 伪装成 Transmission 3.0
-            "--peer-agent=Transmission/3.00",          # 伪装 UA
-            "--user-agent=Transmission/3.00",
-            # ── 性能优化 ──
-            "--disk-cache=64M",
-            "--auto-save-interval=10",
-            "--file-allocation=none",
-            "--no-file-allocation-limit=64M",
-            "--min-split-size=1M",
-            "--http-accept-gzip=true",
-            "--content-disposition-default-utf8=true",
-            "--remote-time=true",
-            "--connect-timeout=10",
-            "--timeout=10",
-            "--max-tries=0",
-            "--retry-wait=10",
-            "--max-file-not-found=10",
-            "--check-certificate=false",
         ]
         # 从 config 读取 tracker 列表注入
         bt_tracker = self.config.get("bt_tracker", "")
