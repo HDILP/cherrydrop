@@ -33,18 +33,15 @@ jobs:
 
       - name: Install Nuitka dependencies (Linux)
         if: runner.os == 'Linux'
-        run: |
-          sudo apt-get install -y patchelf ccache upx
+        run: sudo apt-get install -y patchelf ccache
 
       - name: Install Nuitka dependencies (macOS)
         if: runner.os == 'macOS'
-        run: |
-          brew install ccache upx
+        run: brew install ccache
 
       - name: Install Nuitka dependencies (Windows)
         if: runner.os == 'Windows'
-        run: |
-          choco install upx --no-progress -y
+        run: echo "No extra deps needed"
 
       - name: Build with Nuitka
         shell: bash
@@ -79,19 +76,14 @@ jobs:
 
           # 极限体积优化
           LTO_FLAG=""
-          UPX_FLAG=""
           if [[ "${{ runner.os }}" != "macOS" ]]; then
             LTO_FLAG="--lto=yes"
-            if command -v upx &>/dev/null; then
-              UPX_FLAG="--upx-binary=$(command -v upx)"
-            fi
           fi
 
           python -m nuitka \
             $NUITKA_MODE \
             $NUITKA_OPTS \
             $LTO_FLAG \
-            $UPX_FLAG \
             --strip \
             --remove-output \
             --enable-plugin=pyqt5 \

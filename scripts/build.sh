@@ -7,24 +7,24 @@ echo "=== 🌸 CherryDrop Build ==="
 # 检测当前平台
 case "$(uname -s)" in
   Linux*)  BIN_DIR="resources/bin/linux=resources/bin/linux" ;;
-  Darwin*) BIN_DIR="resources/bin/darwin=resources/bin/darwin" ; UPX_FLAG="" ;;
+  Darwin*) BIN_DIR="resources/bin/darwin=resources/bin/darwin" ;;
   *)       echo "Unknown platform"; exit 1 ;;
 esac
 
 # macOS 用 app 模式，其他用 onefile
 if [[ "$(uname -s)" == "Darwin" ]]; then
   NUITKA_MODE="--mode=app"
+  LTO_FLAG=""
 else
   NUITKA_MODE="--mode=onefile"
-  UPX_FLAG="--upx"
+  LTO_FLAG="--lto=yes"
 fi
 
 # 构建
 echo ">>> 构建单文件..."
 python -m nuitka \
     $NUITKA_MODE \
-    $UPX_FLAG \
-    --lto=yes \
+    $LTO_FLAG \
     --strip \
     --remove-output \
     --enable-plugin=pyqt5 \
