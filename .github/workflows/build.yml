@@ -42,7 +42,7 @@ jobs:
           if [[ "$VERSION" == v* ]]; then
             VERSION="${VERSION#v}"  # 去掉 v 前缀
           else
-            VERSION="0.0.0-dev"
+            VERSION="0.0.0"
           fi
           python -m nuitka \
             --standalone \
