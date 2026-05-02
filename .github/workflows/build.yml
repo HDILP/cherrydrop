@@ -56,6 +56,15 @@ jobs:
             NUITKA_MODE="--mode=app"
           fi
 
+          # 只打包当前平台对应的 aria2 二进制（节省 ~30MB）
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            BIN_DIR="resources/bin/linux=resources/bin/linux"
+          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+            BIN_DIR="resources/bin/darwin=resources/bin/darwin"
+          else
+            BIN_DIR="resources/bin/win64=resources/bin/win64"
+          fi
+
           NUITKA_OPTS=""
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             NUITKA_OPTS="--assume-yes-for-downloads"
@@ -66,7 +75,7 @@ jobs:
             $NUITKA_OPTS \
             --enable-plugin=pyqt5 \
             --follow-imports \
-            --include-data-dir=resources/bin=resources/bin \
+            --include-data-dir="$BIN_DIR" \
             --include-data-dir=resources/icons=resources/icons \
             --include-data-dir=resources/themes=resources/themes \
             --output-dir=dist \

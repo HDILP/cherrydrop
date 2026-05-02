@@ -4,13 +4,20 @@ set -e
 
 echo "=== 🌸 CherryDrop Build ==="
 
+# 检测当前平台
+case "$(uname -s)" in
+  Linux*)  BIN_DIR="resources/bin/linux=resources/bin/linux" ;;
+  Darwin*) BIN_DIR="resources/bin/darwin=resources/bin/darwin" ;;
+  *)       echo "Unknown platform"; exit 1 ;;
+esac
+
 # 构建
 echo ">>> 构建单文件..."
 python -m nuitka \
     --mode=onefile \
     --enable-plugin=pyqt5 \
     --follow-imports \
-    --include-data-dir=resources/bin=resources/bin \
+    --include-data-dir="$BIN_DIR" \
     --include-data-dir=resources/icons=resources/icons \
     --include-data-dir=resources/themes=resources/themes \
     --output-dir=dist \
