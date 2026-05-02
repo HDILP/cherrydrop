@@ -47,8 +47,8 @@ jobs:
           pip install uv
           uv python install 3.10
           uv venv --python 3.10
-          uv pip install -r requirements.txt
-          uv pip install nuitka requests
+          uv pip install --python .venv/bin/python -r requirements.txt
+          uv pip install --python .venv/bin/python nuitka requests
 
           VENV_BIN="$(pwd)/.venv/bin"
           echo "VIRTUAL_ENV=$(pwd)/.venv" >> "$GITHUB_ENV"
