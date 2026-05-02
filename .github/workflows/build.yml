@@ -37,6 +37,13 @@ jobs:
 
       - name: Build with Nuitka (onefile)
         run: |
+          # 设置版本号：tag 推送上来的用 tag 名，手动触发用 dev
+          VERSION="${{ github.ref_name }}"
+          if [[ "$VERSION" == v* ]]; then
+            VERSION="${VERSION#v}"  # 去掉 v 前缀
+          else
+            VERSION="0.0.0-dev"
+          fi
           python -m nuitka \
             --standalone \
             --onefile \
@@ -47,7 +54,7 @@ jobs:
             --include-data-dir=resources/themes=resources/themes \
             --output-dir=dist \
             --product-name=CherryDrop \
-            --file-version=${{ github.ref_name }} \
+            --file-version="$VERSION" \
             --company-name=CherryDrop \
             main.py
 
