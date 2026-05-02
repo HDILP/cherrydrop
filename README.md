@@ -95,7 +95,7 @@ cherrydrop/
 | RPC 通信 | aria2p 0.12+ | JSON-RPC 封装，简洁 API |
 | BT 优化 | motrix-next 参数 | DHT/PEX/LPD，伪装 Transmission |
 | Tracker | 每日自动更新 | CDN 镜像源，热注入 aria2 |
-| 打包 | Nuitka --onefile | 单文件便携分发 |
+| 打包 | Nuitka --mode=onefile | 单文件便携分发 |
 | CI/CD | GitHub Actions | Ubuntu/macOS/Windows 三平台 |
 
 ## 依赖
