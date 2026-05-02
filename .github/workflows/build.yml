@@ -102,7 +102,7 @@ jobs:
              if [[ -n "$APP_DIR" ]]; then \
                find "$APP_DIR" -name '*__mypyc.*' -delete 2>/dev/null || true && \
                mv "$APP_DIR" "CherryDrop.app" && \
-               ditto -c -k --sequesterRsrc "CherryDrop.app" "CherryDrop-macOS.zip" && \
+               zip -r "CherryDrop-macOS.zip" "CherryDrop.app" && \
                rm -rf "CherryDrop.app"; \
              fi)
           elif [[ "${{ runner.os }}" == "Windows" ]]; then
