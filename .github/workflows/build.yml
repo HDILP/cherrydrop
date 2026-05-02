@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
@@ -48,6 +49,7 @@ jobs:
           python -m nuitka \
             --standalone \
             --onefile \
+            --mode=app \
             --enable-plugin=pyqt5 \
             --follow-imports \
             --include-data-dir=resources/bin=resources/bin \
