@@ -100,8 +100,9 @@ jobs:
           elif [[ "${{ runner.os }}" == "macOS" ]]; then
             (cd dist && APP_DIR=$(ls -d *.app 2>/dev/null | head -1) && \
              if [[ -n "$APP_DIR" ]]; then \
-               ditto -c -k --sequesterRsrc "$APP_DIR" "CherryDrop-macOS.zip" && \
-               rm -rf "$APP_DIR"; \
+               mv "$APP_DIR" "CherryDrop.app" && \
+               ditto -c -k --sequesterRsrc "CherryDrop.app" "CherryDrop-macOS.zip" && \
+               rm -rf "CherryDrop.app"; \
              fi)
           elif [[ "${{ runner.os }}" == "Windows" ]]; then
             mv dist/main.exe dist/CherryDrop.exe 2>/dev/null || true

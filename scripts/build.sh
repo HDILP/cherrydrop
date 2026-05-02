@@ -36,4 +36,6 @@ python -m nuitka \
     --file-version=$(git describe --tags --always 2>/dev/null || echo "dev") \
     main.py
 
-echo "=== ✅ 构建完成: dist/main.bin ==="
+echo "=== ✅ 构建完成 ==="
+echo "dist/ 内容:"
+ls -lh dist/
