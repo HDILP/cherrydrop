@@ -40,7 +40,7 @@ python -m nuitka \
     --follow-imports \
     --nofollow-import-to=PyQt5.QtWebEngine,PyQt5.QtMultimedia \
     --include-data-dir=resources/bin/linux=resources/bin/linux \
-    --include-data-dir=resources/aria2.conf=resources/aria2.conf \
+    --include-data-file=resources/aria2.conf=resources/aria2.conf \
     --include-data-dir=resources/icons=resources/icons \
     --include-data-dir=resources/themes=resources/themes \
     --output-dir=dist --product-name=CherryDrop \

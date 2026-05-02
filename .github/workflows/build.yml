@@ -77,7 +77,7 @@ jobs:
             --nofollow-import-to=PyQt5.QtMultimedia \
             --nofollow-import-to=tkinter,unittest,pdb,test,distutils,ensurepip,venv,lib2to3,idlelib,turtle,cgi,smtplib,poplib,imaplib,ftplib,telnetlib,nntplib \
             --include-data-dir="$BIN_DIR" \
-            --include-data-dir=resources/aria2.conf=resources/aria2.conf \
+            --include-data-file=resources/aria2.conf=resources/aria2.conf \
             --include-data-dir=resources/icons=resources/icons \
             --include-data-dir=resources/themes=resources/themes \
             --output-dir=dist \
