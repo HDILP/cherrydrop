@@ -86,6 +86,30 @@ jobs:
             --company-name=CherryDrop \
             main.py
 
+      - name: Prepare artifacts (clean up Nuitka build intermediates)
+        shell: bash
+        run: |
+          echo "=== Before cleanup ==="
+          ls -la dist/
+          rm -rf dist/*.onefile-build dist/*.dist dist/*.build 2>/dev/null || true
+          echo "=== After cleanup ==="
+          ls -la dist/
+          # 统一命名输出文件
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            mv dist/main.bin dist/CherryDrop 2>/dev/null || true
+          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+            (cd dist && APP_DIR=$(ls -d *.app 2>/dev/null | head -1) && \
+             if [[ -n "$APP_DIR" ]]; then \
+               ditto -c -k --sequesterRsrc "$APP_DIR" "CherryDrop-macOS.zip" && \
+               rm -rf "$APP_DIR"; \
+             fi)
+          elif [[ "${{ runner.os }}" == "Windows" ]]; then
+            mv dist/main.exe dist/CherryDrop.exe 2>/dev/null || true
+            mv dist/CherryDrop.exe dist/CherryDrop.exe 2>/dev/null || true
+          fi
+          echo "=== Final dist/ ==="
+          ls -la dist/
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -117,4 +141,9 @@ jobs:
               --title "CherryDrop $TAG" \
               --generate-notes
           fi
-          find artifacts -type f -exec gh release upload "$TAG" {} --clobber \;
+          # 上传每个 artifact 目录下的产物（已清理干净，每目录只有一个文件）
+          for dir in artifacts/*/; do
+            for file in "$dir"*; do
+              [[ -f "$file" ]] && gh release upload "$TAG" "$file" --clobber
+            done
+          done
