@@ -37,7 +37,7 @@ jobs:
 
       - name: Install Nuitka dependencies (macOS)
         if: runner.os == 'macOS'
-        run: brew install ccache openssl
+        run: brew install ccache openssl xz
 
       - name: Build with Nuitka
         shell: bash
@@ -74,7 +74,7 @@ jobs:
             --enable-plugin=pyqt5 \
             --follow-imports \
             --nofollow-import-to=PyQt5.QtWebEngine,PyQt5.QtMultimedia,PyQt5.QtPrintSupport,PyQt5.QtSvg,PyQt5.QtWebSockets,PyQt5.QtQuick,PyQt5.QtQml,PyQt5.QtQmlModels,PyQt5.QtDBus \
-            --nofollow-import-to=tkinter,unittest,pdb,test,distutils,ensurepip,venv,lib2to3,idlelib,turtle,cgi,smtplib,poplib,imaplib,ftplib,telnetlib,nntplib,hashlib,_hashlib \
+            --nofollow-import-to=tkinter,unittest,pdb,test,distutils,ensurepip,venv,lib2to3,idlelib,turtle,cgi,smtplib,poplib,imaplib,ftplib,telnetlib,nntplib,hashlib,_hashlib,lzma,_lzma \
             --include-data-dir="$BIN_DIR" \
             --include-data-file=resources/aria2.conf=resources/aria2.conf \
             --include-data-dir=resources/icons=resources/icons \
