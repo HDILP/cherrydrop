@@ -40,14 +40,31 @@ jobs:
         run: |
           brew install ccache
           if [[ "${{ runner.arch }}" == "X64" ]]; then
-            # Intel macOS: Nuitka dylib scanner has trouble with Homebrew symlink paths.
-            # Install actual brew packages so the dylibs exist at predictable locations.
-            brew install openssl@3 xz
-            # Create versionless symlink (some Python modules link to /usr/local/opt/openssl)
-            ln -sf /usr/local/opt/openssl@3 /usr/local/opt/openssl 2>/dev/null || true
-            # Set DYLD_LIBRARY_PATH so Nuitka can resolve dylib dependencies during scan
-            echo "DYLD_LIBRARY_PATH=/usr/local/opt/openssl@3/lib:/usr/local/opt/xz/lib" >> $GITHUB_ENV
+            brew install openssl@3
           fi
+
+      - name: Fix Homebrew dylib references for Nuitka scanner (Intel macOS)
+        if: runner.os == 'macOS' && runner.arch == 'X64'
+        run: |
+          # Nuitka 4.0.8's dylib scanner chokes on Homebrew symlink paths
+          # (e.g. /usr/local/opt/openssl@3/lib/libssl.3.dylib -> Cellar)
+          # Fix: use install_name_tool to rewrite deps to resolved real paths
+          DYNLOAD=$(python3 -c "import sysconfig; print(sysconfig.get_config_var('DESTLIB') + '/lib-dynload')")
+          echo "Python lib-dynload: $DYNLOAD"
+          for SO in _hashlib _ssl _lzma; do
+            SO_FILE=$(ls "$DYNLOAD"/${SO}*.so 2>/dev/null | head -1)
+            [ -z "$SO_FILE" ] && { echo "  ${SO}.so: not found"; continue; }
+            echo "  Processing: $(basename $SO_FILE)"
+            otool -L "$SO_FILE" 2>/dev/null | grep -E '/usr/local/opt/|/opt/homebrew/' | while read -r line; do
+              OLD=$(echo "$line" | awk '{print $1}')
+              [ -f "$OLD" ] || { echo "    $OLD: file not found"; continue; }
+              REAL=$(realpath "$OLD" 2>/dev/null)
+              [ -z "$REAL" ] && continue
+              [ "$OLD" = "$REAL" ] && continue
+              echo "    $OLD -> $REAL"
+              install_name_tool -change "$OLD" "$REAL" "$SO_FILE" 2>&1 && echo "    ✓" || echo "    ✗ failed"
+            done
+          done
 
       - name: Build with Nuitka
         shell: bash
