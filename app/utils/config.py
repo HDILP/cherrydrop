@@ -62,8 +62,12 @@ class Config:
                 pass
 
     def save(self):
-        with open(self._path, "w", encoding="utf-8") as f:
-            json.dump(self._data, f, indent=2, ensure_ascii=False)
+        try:
+            with open(self._path, "w", encoding="utf-8") as f:
+                json.dump(self._data, f, indent=2, ensure_ascii=False)
+        except OSError:
+            # 配置写失败时避免导致 UI 层直接崩溃
+            pass
 
     def get(self, key: str, default=None):
         return self._data.get(key, default)
@@ -79,5 +83,11 @@ class Config:
     def get_download_dir(self) -> str:
         dd = self._data.get("download_dir", "")
         dd = os.path.expanduser(dd)
-        os.makedirs(dd, exist_ok=True)
-        return dd
+        try:
+            os.makedirs(dd, exist_ok=True)
+            return dd
+        except OSError:
+            fallback = str(Path.home() / "Downloads")
+            os.makedirs(fallback, exist_ok=True)
+            self._data["download_dir"] = fallback
+            return fallback
