@@ -39,14 +39,9 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install ccache
 
-      - name: Install Nuitka dependencies (Windows)
-        if: runner.os == 'Windows'
-        run: echo "No extra deps needed"
-
       - name: Build with Nuitka
         shell: bash
         run: |
-          # 设置版本号
           VERSION="${{ github.ref_name }}"
           if [[ "$VERSION" == v* ]]; then
             VERSION="${VERSION#v}"
@@ -54,7 +49,6 @@ jobs:
             VERSION="0.0.0"
           fi
 
-          # 各平台 Nuitka 模式
           NUITKA_MODE="--mode=onefile"
           if [[ "${{ runner.os }}" == "macOS" ]]; then
             NUITKA_MODE="--mode=app"
@@ -74,28 +68,18 @@ jobs:
             NUITKA_OPTS="--assume-yes-for-downloads"
           fi
 
-          # 极限体积优化
-          LTO_FLAG=""
-          if [[ "${{ runner.os }}" != "macOS" ]]; then
-            LTO_FLAG="--lto=yes"
-          fi
-
           python -m nuitka \
             $NUITKA_MODE \
             $NUITKA_OPTS \
-            $LTO_FLAG \
-            --strip \
-            --remove-output \
             --enable-plugin=pyqt5 \
-            --noinclude-qt-plugins=sensible,styles,translations \
+            --follow-imports \
             --nofollow-import-to=PyQt5.QtWebEngine \
             --nofollow-import-to=PyQt5.QtMultimedia \
-            --follow-imports \
+            --nofollow-import-to=tkinter,unittest,pdb,test,distutils,ensurepip,venv,lib2to3,idlelib,turtle,cgi,smtplib,poplib,imaplib,ftplib,telnetlib,nntplib \
             --include-data-dir="$BIN_DIR" \
             --include-data-dir=resources/aria2.conf=resources/aria2.conf \
             --include-data-dir=resources/icons=resources/icons \
             --include-data-dir=resources/themes=resources/themes \
-            --nofollow-import-to=tkinter,unittest,pdb,test,distutils,ensurepip,venv,lib2to3,idlelib,turtle,cgi,smtplib,poplib,imaplib,ftplib,telnetlib,nntplib \
             --output-dir=dist \
             --product-name=CherryDrop \
             --file-version="$VERSION" \
@@ -124,7 +108,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${{ github.ref_name }}"
-          echo "Creating release for tag: $TAG"
           gh release create "$TAG" \
             --title "CherryDrop $TAG" \
             --generate-notes || true

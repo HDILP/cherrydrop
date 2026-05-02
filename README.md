@@ -36,16 +36,15 @@ bash scripts/build.sh          # Linux/macOS
 pip install nuitka requests
 python -m nuitka \
     --mode=onefile \
-    --lto=yes --strip --remove-output \
     --enable-plugin=pyqt5 \
-    --noinclude-qt-plugins=sensible,styles,translations \
+    --follow-imports \
+    --nofollow-import-to=PyQt5.QtWebEngine,PyQt5.QtMultimedia \
     --include-data-dir=resources/bin/linux=resources/bin/linux \
     --include-data-dir=resources/aria2.conf=resources/aria2.conf \
     --include-data-dir=resources/icons=resources/icons \
     --include-data-dir=resources/themes=resources/themes \
     --output-dir=dist --product-name=CherryDrop \
     main.py
-# (macOS 用 --mode=app 代替 --mode=onefile)
 
 # 方式三: GitHub Actions
 # 推送 tag v* 即可自动构建
