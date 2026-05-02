@@ -2,11 +2,16 @@
 """CherryDrop 入口"""
 import sys
 import os
-import socket
+import tempfile
+
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
 import logging
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 
 from app.utils.config import Config
 from app.utils.theme import apply_theme
@@ -15,52 +20,39 @@ from app.engine.amule_client import AmuleClient
 from app.main_window import MainWindow
 
 
+# 持有文件描述符，保证进程存活期间锁不释放
+_LOCK_FILE = None
+
+
 # ── 单例锁 ──
 def _try_lock() -> bool:
-    """尝试获取单例锁，防止多开"""
-    lock_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".cherrydrop.lock")
-    # Windows 不支持 AF_UNIX 抽象命名空间；同时 os.getuid 在 Windows 不可用。
-    # 在这种情况下回退到 PID 文件检查，避免启动时直接崩溃。
-    uid = getattr(os, "getuid", lambda: 0)()
+    """尝试获取单例锁，防止多开。
+
+    在 macOS/Linux 优先使用 flock 避免 PID 复用导致的误判。
+    """
+    global _LOCK_FILE
+
+    lock_path = os.path.join(tempfile.gettempdir(), "cherrydrop.lock")
     try:
-        if hasattr(socket, "AF_UNIX"):
-            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            sock.bind(f"\0cherrydrop_{uid}")
-            sock.close()
-            return True
+        lock_file = open(lock_path, "a+")
     except OSError:
-        pass
+        return True
+
+    if fcntl is None:
+        _LOCK_FILE = lock_file
+        return True
 
     try:
-        with open(lock_path) as f:
-            pid = f.read().strip()
-        os.kill(int(pid), 0)
-        return False
-    except (OSError, ValueError, FileNotFoundError):
-        pass
-
-    # 锁文件存在但进程已死，移除后重试
-    try:
-        os.unlink(lock_path)
-    except OSError:
-        pass
-    try:
-        if hasattr(socket, "AF_UNIX"):
-            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            sock.bind(f"\0cherrydrop_{uid}")
-            sock.close()
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        lock_file.seek(0)
+        lock_file.truncate()
+        lock_file.write(str(os.getpid()))
+        lock_file.flush()
+        _LOCK_FILE = lock_file
         return True
     except OSError:
+        lock_file.close()
         return False
-
-
-def write_pid_file():
-    pid_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".cherrydrop.lock")
-    try:
-        with open(pid_path, "w") as f:
-            f.write(str(os.getpid()))
-    except OSError:
-        pass
 
 
 def setup_logging():
@@ -93,7 +85,6 @@ def main():
         msg.exec_()
         sys.exit(0)
 
-    write_pid_file()
 
     # 加载配置
     config = Config()
@@ -107,7 +98,8 @@ def main():
 
     # 创建主窗口
     window = MainWindow(config, aria2, amule)
-    window.show()
+    # 延迟到事件循环开始后再激活窗口，避免 macOS 首次启动只驻留托盘不弹主窗
+    QTimer.singleShot(0, window.show_and_activate)
 
     sys.exit(app.exec_())
 
