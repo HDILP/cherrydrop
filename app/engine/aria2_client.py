@@ -1,4 +1,5 @@
 """aria2 RPC 客户端封装"""
+import os
 import subprocess
 import time
 import threading
@@ -61,7 +62,6 @@ class Aria2Client:
 
     def _resources_path(self) -> str:
         """获取 resources 目录的绝对路径"""
-        import os
         return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "resources")
 
     def _conf_path(self) -> str:
@@ -69,14 +69,12 @@ class Aria2Client:
         return os.path.join(self._resources_path(), "aria2.conf")
 
     def _session_path(self) -> str:
-        import os
         return os.path.join(
             os.path.dirname(self.config._path),
             "aria2.session"
         )
 
     def _dht_path(self) -> str:
-        import os
         return os.path.join(
             os.path.dirname(self.config._path),
             "dht.dat"
