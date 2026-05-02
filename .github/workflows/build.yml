@@ -100,6 +100,7 @@ jobs:
           elif [[ "${{ runner.os }}" == "macOS" ]]; then
             (cd dist && APP_DIR=$(ls -d *.app 2>/dev/null | head -1) && \
              if [[ -n "$APP_DIR" ]]; then \
+               find "$APP_DIR" -name '*__mypyc.*' -delete 2>/dev/null || true && \
                mv "$APP_DIR" "CherryDrop.app" && \
                ditto -c -k --sequesterRsrc "CherryDrop.app" "CherryDrop-macOS.zip" && \
                rm -rf "CherryDrop.app"; \
