@@ -92,11 +92,15 @@ jobs:
         with:
           path: artifacts
 
-      - name: List artifacts
-        run: find artifacts -type f
-
-      - name: Create release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: artifacts/**/*
-          generate_release_notes: true
+      - name: Create release and upload assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          echo "Creating release for tag: $TAG"
+          # 先尝试创建（可能已存在则忽略错误）
+          gh release create "$TAG" \
+            --title "CherryDrop $TAG" \
+            --generate-notes || true
+          # 逐个上传 artifact，错误忽略（可能已上传）
+          find artifacts -type f -exec gh release upload "$TAG" {} --clobber \;
