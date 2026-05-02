@@ -19,31 +19,39 @@ from app.main_window import MainWindow
 def _try_lock() -> bool:
     """尝试获取单例锁，防止多开"""
     lock_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".cherrydrop.lock")
+    # Windows 不支持 AF_UNIX 抽象命名空间；同时 os.getuid 在 Windows 不可用。
+    # 在这种情况下回退到 PID 文件检查，避免启动时直接崩溃。
+    uid = getattr(os, "getuid", lambda: 0)()
     try:
-        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        sock.bind(f"\0cherrydrop_{os.getuid()}")
-        sock.close()
-        return True
-    except OSError:
-        try:
-            with open(lock_path) as f:
-                pid = f.read().strip()
-            os.kill(int(pid), 0)
-            return False
-        except (OSError, ValueError, FileNotFoundError):
-            pass
-        # 锁文件存在但进程已死，移除后重试
-        try:
-            os.unlink(lock_path)
-        except OSError:
-            pass
-        try:
+        if hasattr(socket, "AF_UNIX"):
             sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            sock.bind(f"\0cherrydrop_{os.getuid()}")
+            sock.bind(f"\0cherrydrop_{uid}")
             sock.close()
             return True
-        except OSError:
-            return False
+    except OSError:
+        pass
+
+    try:
+        with open(lock_path) as f:
+            pid = f.read().strip()
+        os.kill(int(pid), 0)
+        return False
+    except (OSError, ValueError, FileNotFoundError):
+        pass
+
+    # 锁文件存在但进程已死，移除后重试
+    try:
+        os.unlink(lock_path)
+    except OSError:
+        pass
+    try:
+        if hasattr(socket, "AF_UNIX"):
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            sock.bind(f"\0cherrydrop_{uid}")
+            sock.close()
+        return True
+    except OSError:
+        return False
 
 
 def write_pid_file():
@@ -66,6 +74,14 @@ def main():
     setup_logging()
     logger = logging.getLogger(__name__)
 
+    app = QApplication(sys.argv)
+    app.setApplicationName("CherryDrop")
+    app.setOrganizationName("CherryDrop")
+
+    # 高DPI支持
+    app.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+    app.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+
     # 单例检查
     if not _try_lock():
         logger.warning("CherryDrop 已在运行")
@@ -78,14 +94,6 @@ def main():
         sys.exit(0)
 
     write_pid_file()
-
-    app = QApplication(sys.argv)
-    app.setApplicationName("CherryDrop")
-    app.setOrganizationName("CherryDrop")
-
-    # 高DPI支持
-    app.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-    app.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 
     # 加载配置
     config = Config()
