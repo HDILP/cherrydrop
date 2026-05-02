@@ -13,12 +13,17 @@
 - [x] 迭代 10: 错误处理 (aria2c 检测、空状态提示、单例锁、代理拼接修复)
 - [x] 迭代 11: 打磨优化 (自适应刷新、拖拽支持)
 - [x] aria2 配置改用 `--conf-path=resources/aria2.conf` (motrix-next 原版参数), 代码只传动态参数
+- [x] **PR #1** (codex/find-and-fix-catastrophic-bugs): 启动崩溃修复 + Windows 兼容
+  - `_try_lock()`: Windows 回退 (AF_UNIX 不可用时改用 PID 文件)
+  - `main()`: QApplication 移到单例检查前 (否则 MessageBox 无法弹出)
+  - 高 DPI 支持 (`AA_EnableHighDpiScaling`, `AA_UseHighDpiPixmaps`)
+  - `config.py`: save() 加 try/except; get_download_dir() 失败时回退 ~/Downloads
 
 ### CI/CD 状态 (2026-05-02)
 - ✅ Linux (ubuntu-latest) — 构建通过
 - ✅ Windows (windows-latest) — 构建通过
 - ✅ macOS ARM64 (macos-latest) — 构建通过
-- ⏳ macOS Intel (macos-15-intel) — Run #44 正在进行中 (uv Python 方案)
+- ✅ macOS Intel (macos-15-intel) — ✅ Run #47 通过 (uv Python 方案)
 - ✅ **双 macOS 矩阵**: Intel + ARM 各产一个 .zip, 含对应架构 aria2c
 - ⚠️ **体积**: PyQt5 ~50-70MB 基线, `--nofollow-import-to=PyQt5.QtWebEngine,...` 已排除大模块
 
@@ -32,9 +37,12 @@
 - brew 的 `$XZ_DIR` 变量名在 GitHub Actions YAML 中会被特殊处理 → 用绝对路径替代
 - `bash -e` 模式下 if 条件为 false 会直接退出 → 加 `|| true`
 
-### 进行中
-- [ ] Intel macOS CI 最终确认 (Run #44)
-- [ ] 发布 v0.1.0 Release (待所有平台通过)
+### 发布
+- ✅ **v0.1.0 已发布**: https://github.com/HDILP/cherrydrop/releases/tag/v0.1.0
+  - 🐧 Linux: CherryDrop (45 MB)
+  - 🍎 macOS Intel: CherryDrop-macOS-x86_64.zip (28 MB)
+  - 🍏 macOS ARM: CherryDrop-macOS-arm64.zip (26 MB)
+  - 🪟 Windows: CherryDrop.exe (70 MB)
 
 ## Plan
 
