@@ -64,6 +64,7 @@ def setup_logging():
 
 def main():
     setup_logging()
+    logger = logging.getLogger(__name__)
 
     # 单例检查
     if not _try_lock():
