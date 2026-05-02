@@ -156,7 +156,6 @@ jobs:
           retention-days: 1
 
   release:
-    if: startsWith(github.ref, 'refs/tags/')
     needs: build
     runs-on: ubuntu-latest
 
@@ -173,15 +172,24 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="${{ github.ref_name }}"
-          if ! gh release view "$TAG" --json id &>/dev/null; then
-            gh release create "$TAG" \
-              --title "CherryDrop $TAG" \
-              --generate-notes
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            RELEASE_TAG="${{ github.ref_name }}"
+            RELEASE_TITLE="CherryDrop $RELEASE_TAG"
+            RELEASE_ARGS=(--generate-notes)
+          else
+            RELEASE_TAG="build-${{ github.run_number }}"
+            RELEASE_TITLE="CherryDrop Build #${{ github.run_number }}"
+            RELEASE_ARGS=(--prerelease --notes "Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}")
+          fi
+
+          if ! gh release view "$RELEASE_TAG" --json id &>/dev/null; then
+            gh release create "$RELEASE_TAG" \
+              --title "$RELEASE_TITLE" \
+              "${RELEASE_ARGS[@]}"
           fi
           # 上传每个 artifact 目录下的产物（已清理干净，每目录只有一个文件）
           for dir in artifacts/*/; do
             for file in "$dir"*; do
-              [[ -f "$file" ]] && gh release upload "$TAG" "$file" --clobber
+              [[ -f "$file" ]] && gh release upload "$RELEASE_TAG" "$file" --clobber
             done
           done
