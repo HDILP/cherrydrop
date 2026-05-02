@@ -1,21 +1,49 @@
 #!/usr/bin/env python3
 """CherryDrop 入口"""
 import sys
+import logging
+
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import Qt
 
+from app.utils.config import Config
+from app.utils.theme import apply_theme
+from app.engine.aria2_client import Aria2Client
+from app.engine.amule_client import AmuleClient
+from app.main_window import MainWindow
+
+
+def setup_logging():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="[%(levelname)s] %(name)s: %(message)s",
+    )
+
 
 def main():
+    setup_logging()
+
     app = QApplication(sys.argv)
     app.setApplicationName("CherryDrop")
     app.setOrganizationName("CherryDrop")
 
-    # 后面会逐步替换为真正的 MainWindow
-    from PyQt5.QtWidgets import QLabel
-    w = QLabel("🌸 CherryDrop loading...")
-    w.setAlignment(Qt.AlignCenter)
-    w.resize(400, 60)
-    w.show()
+    # 高DPI支持
+    app.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+    app.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+
+    # 加载配置
+    config = Config()
+
+    # 加载主题
+    apply_theme(app, config.get("theme", "cherry"))
+
+    # 初始化引擎
+    aria2 = Aria2Client(config)
+    amule = AmuleClient()
+
+    # 创建主窗口
+    window = MainWindow(config, aria2, amule)
+    window.show()
 
     sys.exit(app.exec_())
 
