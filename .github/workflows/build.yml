@@ -43,28 +43,28 @@ jobs:
             brew install openssl@3
           fi
 
-      - name: Fix Homebrew dylib references for Nuitka scanner (Intel macOS)
+      - name: Hide Homebrew dylibs from Nuitka scanner (Intel macOS)
         if: runner.os == 'macOS' && runner.arch == 'X64'
         run: |
-          # Nuitka 4.0.8's dylib scanner chokes on Homebrew symlink paths
-          # (e.g. /usr/local/opt/openssl@3/lib/libssl.3.dylib -> Cellar)
-          # Fix: use install_name_tool to rewrite deps to resolved real paths
-          DYNLOAD=$(python3 -c "import sysconfig; print(sysconfig.get_config_var('DESTLIB') + '/lib-dynload')")
-          echo "Python lib-dynload: $DYNLOAD"
-          for SO in _hashlib _ssl _lzma; do
-            SO_FILE=$(ls "$DYNLOAD"/${SO}*.so 2>/dev/null | head -1)
-            [ -z "$SO_FILE" ] && { echo "  ${SO}.so: not found"; continue; }
-            echo "  Processing: $(basename $SO_FILE)"
-            otool -L "$SO_FILE" 2>/dev/null | grep -E '/usr/local/opt/|/opt/homebrew/' | while read -r line; do
-              OLD=$(echo "$line" | awk '{print $1}')
-              [ -f "$OLD" ] || { echo "    $OLD: file not found"; continue; }
-              REAL=$(realpath "$OLD" 2>/dev/null)
-              [ -z "$REAL" ] && continue
-              [ "$OLD" = "$REAL" ] && continue
-              echo "    $OLD -> $REAL"
-              install_name_tool -change "$OLD" "$REAL" "$SO_FILE" 2>&1 && echo "    ✓" || echo "    ✗ failed"
-            done
+          # Nuitka 4.0.8's dylib scanner FATALs on certain macOS dylib formats (bug #3777).
+          # Workaround: remove dylibs during build so scanner can't find them,
+          # then bundle them into the .app manually after build.
+          OPENSSL_DIR=$(brew --prefix openssl@3)
+          XZ_DIR=$(brew --prefix xz 2>/dev/null || echo "")
+          mkdir -p /tmp/nuitka-dylib-bak
+          for f in "$OPENSSL_DIR"/lib/libssl*.dylib "$OPENSSL_DIR"/lib/libcrypto*.dylib; do
+            if [ -f "$f" ]; then
+              cp -L "$f" /tmp/nuitka-dylib-bak/ && echo "Backed up: $(basename $f)" && rm -f "$f"
+            fi
           done
+          if [ -n "$XZ_DIR" ]; then
+            for f in "$XZ_DIR"/lib/liblzma*.dylib; do
+              if [ -f "$f" ]; then
+                cp -L "$f" /tmp/nuitka-dylib-bak/ && echo "Backed up: $(basename $f)" && rm -f "$f"
+              fi
+            done
+          fi
+          ls -la /tmp/nuitka-dylib-bak/
 
       - name: Build with Nuitka
         shell: bash
@@ -145,6 +145,33 @@ jobs:
                else \
                  echo ">>> Intel: removing arm64 aria2" && \
                  rm -f "$BIN_PATH/aria2c-arm64" && \
+                 # Intel macOS: restore dylibs hidden from Nuitka scanner + fix refs
+                 if [ -d /tmp/nuitka-dylib-bak ]; then \
+                   echo ">>> Bundling Homebrew dylibs (hidden from Nuitka during build)" && \
+                   cp /tmp/nuitka-dylib-bak/*.dylib "$APP/" 2>/dev/null || true && \
+                   echo ">>> Fixing dylib references in .so files to @executable_path..." && \
+                   for SO in $(find "$APP" -name '*.so' -type f 2>/dev/null); do \
+                     otool -L "$SO" 2>/dev/null | grep '/Cellar/' | awk '{print $1}' | while read -r OLD; do \
+                       BN=$(basename "$OLD") && \
+                       if [ -f "$APP/$BN" ]; then \
+                         install_name_tool -change "$OLD" "@executable_path/$BN" "$SO" 2>/dev/null && \
+                         echo "    $(basename $SO): $OLD -> @executable_path/$BN"; \
+                       fi; \
+                     done; \
+                   done && \
+                   echo ">>> Fixing dylib self-references..." && \
+                   for DYLIB in "$APP"/*.dylib; do \
+                     [ -f "$DYLIB" ] || continue; \
+                     otool -L "$DYLIB" 2>/dev/null | grep '/Cellar/' | awk '{print $1}' | while read -r OLD; do \
+                       BN=$(basename "$OLD") && \
+                       install_name_tool -change "$OLD" "@executable_path/$BN" "$DYLIB" 2>/dev/null; \
+                     done; \
+                     # Also fix the dylib's own install name
+                     BN=$(basename "$DYLIB") && \
+                     install_name_tool -id "@executable_path/$BN" "$DYLIB" 2>/dev/null || true; \
+                   done && \
+                   echo ">>> Dylib references fixed"; \
+                 fi && \
                  ZIP_NAME="CherryDrop-macOS-x86_64.zip"; \
                fi && \
                zip -r "$ZIP_NAME" "CherryDrop.app" && \
