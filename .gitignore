@@ -20,3 +20,7 @@ Thumbs.db
 settings.json
 aria2.session
 dht.dat
+
+# Editor temp
+*.swp
+*.swo

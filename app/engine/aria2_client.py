@@ -8,6 +8,7 @@ from typing import Optional, Callable, Dict, Any
 import aria2p
 
 from app.utils.config import Config
+from app.engine.tracker_updater import TrackerUpdater, DEFAULT_SOURCES
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,10 @@ class Aria2Client:
         self._process: Optional[subprocess.Popen] = None
         self._api: Optional[aria2p.API] = None
         self._running = False
+        # Tracker 管理器
+        self.tracker_updater = TrackerUpdater(
+            sources=config.get("bt_tracker_sources", DEFAULT_SOURCES),
+        )
 
     @property
     def api(self) -> Optional[aria2p.API]:
@@ -173,6 +178,14 @@ class Aria2Client:
             client.get_version()
             self._running = True
             logger.info("aria2c 启动成功")
+
+            # 启动后拉取最新 tracker 并开始定时更新
+            if self.config.get("bt_tracker_auto_update", True):
+                trackers = self.tracker_updater.fetch()
+                if trackers:
+                    self._on_tracker_updated(self.tracker_updater.get_tracker_string())
+                self.tracker_updater.start_auto_update(callback=self._on_tracker_updated)
+
             return True
 
         except Exception as e:
@@ -255,6 +268,30 @@ class Aria2Client:
             }
         except Exception:
             return {"download_speed": 0, "upload_speed": 0, "num_active": 0}
+
+    def _on_tracker_updated(self, tracker_str: str):
+        """Tracker 更新回调：将新列表写入配置并注入 aria2"""
+        if not tracker_str:
+            return
+        self.config.set("bt_tracker", tracker_str)
+        # 如果 aria2 正在运行，通过 changeGlobalOption 热更新
+        if self._api:
+            try:
+                self._api.client.call("system.changeGlobalOption", {"bt-tracker": tracker_str})
+                logger.info("Tracker: 已热更新到 aria2")
+            except Exception as e:
+                logger.warning(f"Tracker: 热更新失败: {e}")
+
+    def get_peers(self, gid: str) -> list:
+        """获取指定任务的 peer 列表"""
+        if not self._api:
+            return []
+        try:
+            # 通过原始 RPC 调用获取 peers
+            result = self._api.client.call("aria2.getPeers", gid)
+            return result if isinstance(result, list) else []
+        except Exception:
+            return []
 
     def __del__(self):
         self.stop()

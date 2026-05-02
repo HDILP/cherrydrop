@@ -222,12 +222,15 @@ class MainWindow(QMainWindow):
 
         for dl in downloads:
             widget = self.task_list.get_task_widget(dl.gid)
+            # 活跃下载才查询 peer 信息
+            peers = self.aria2.get_peers(dl.gid) if dl.status == "active" else []
             if widget:
                 widget.update_status(
                     completed=dl.completed_length,
                     total=dl.total_length,
                     speed=human_speed(dl.download_speed),
                     status=dl.status,
+                    peers=peers,
                 )
             else:
                 # 新任务（可能是 session 恢复的）
@@ -238,6 +241,7 @@ class MainWindow(QMainWindow):
                     total=dl.total_length,
                     speed=human_speed(dl.download_speed),
                     status=dl.status,
+                    peers=peers,
                 )
 
         # 更新状态栏速度

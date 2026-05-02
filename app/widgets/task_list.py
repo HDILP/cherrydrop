@@ -49,9 +49,15 @@ class TaskItemWidget(QWidget):
         self.speed_label.setStyleSheet("font-size: 11px; color: rgba(0,0,0,0.45);")
         layout.addWidget(self.speed_label)
 
+        # Peer 信息
+        self.peer_label = QLabel("")
+        self.peer_label.setObjectName("PeerLabel")
+        self.peer_label.setStyleSheet("font-size: 10px; color: rgba(0,0,0,0.35);")
+        layout.addWidget(self.peer_label)
+
         self.setLayout(layout)
 
-    def update_status(self, completed: int, total: int, speed: str, status: str):
+    def update_status(self, completed: int, total: int, speed: str, status: str, peers: list = None):
         """更新任务状态显示"""
         self.progress_bar.set_progress(completed, total)
         if total > 0:
@@ -64,6 +70,14 @@ class TaskItemWidget(QWidget):
             self.speed_label.setText(f"↓ {speed}")
         else:
             self.speed_label.setText(status)
+
+        # Peer 信息
+        if peers is not None:
+            seeds = sum(1 for p in peers if p.get("amChoking", True) is False)
+            leechs = len(peers) - seeds
+            self.peer_label.setText(f"种子 {seeds} | 用户 {leechs}")
+        else:
+            self.peer_label.setText("")
 
 
 class TaskList(QListWidget):
