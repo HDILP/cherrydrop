@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, macos-15-intel, windows-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -68,11 +68,6 @@ jobs:
             NUITKA_OPTS="--assume-yes-for-downloads"
           fi
 
-          if [[ "${{ runner.os }}" == "macOS" ]]; then
-            # macOS: compile universal2 binary (Intel + Apple Silicon)
-            export ARCHFLAGS="-arch x86_64 -arch arm64"
-          fi
-
           python -m nuitka \
             $NUITKA_MODE \
             $NUITKA_OPTS \
@@ -114,9 +109,18 @@ jobs:
                        QtSvg QtWebSockets QtQuick QtQml QtQmlModels QtDBus) && \
                # 清理无用 Qt 插件
                (cd "$APP/PyQt5/qt-plugins" && rm -rf printsupport mediaservice iconengines) && \
-               # 保留两种 arch 的 aria2 二进制（universal2 包需要两者）
-               echo ">>> Creating universal2 macOS package..." && \
-               zip -r "CherryDrop-macOS.zip" "CherryDrop.app" && \
+               # 只保留当前架构的 aria2 二进制
+               BIN_PATH="$APP/resources/bin/darwin" && \
+               if [[ "${{ runner.arch }}" == "ARM64" ]]; then \
+                 echo ">>> Apple Silicon: keeping arm64 aria2" && \
+                 mv "$BIN_PATH/aria2c-arm64" "$BIN_PATH/aria2c" && \
+                 ZIP_NAME="CherryDrop-macOS-arm64.zip"; \
+               else \
+                 echo ">>> Intel: removing arm64 aria2" && \
+                 rm -f "$BIN_PATH/aria2c-arm64" && \
+                 ZIP_NAME="CherryDrop-macOS-x86_64.zip"; \
+               fi && \
+               zip -r "$ZIP_NAME" "CherryDrop.app" && \
                rm -rf "CherryDrop.app"; \
              fi)
           elif [[ "${{ runner.os }}" == "Windows" ]]; then
@@ -129,7 +133,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CherryDrop-${{ runner.os }}
+          name: CherryDrop-${{ runner.os }}-${{ runner.arch }}
           path: dist/*
           retention-days: 1
 
