@@ -47,12 +47,15 @@ jobs:
           pip install uv
           uv python install 3.10
           uv venv --python 3.10
-          source .venv/bin/activate
-          pip install -r requirements.txt
-          pip install nuitka requests
-          # Make uv venv Python default for subsequent steps
-          echo "VIRTUAL_ENV=$(pwd)/.venv" >> $GITHUB_ENV
-          echo "$(pwd)/.venv/bin" >> $GITHUB_PATH
+          # Use uv to install deps into the venv (avoids system pip issues)
+          uv pip install -r requirements.txt
+          uv pip install nuitka requests
+          # Make uv venv Python default for subsequent build steps
+          VENV_BIN="$(pwd)/.venv/bin"
+          echo "VIRTUAL_ENV=$(pwd)/.venv" >> "$GITHUB_ENV"
+          echo "$VENV_BIN" >> "$GITHUB_PATH"
+          echo "=== uv Python check ==="
+          "$VENV_BIN/python" --version
 
       - name: Build with Nuitka
         shell: bash
