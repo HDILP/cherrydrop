@@ -108,7 +108,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${{ github.ref_name }}"
-          gh release create "$TAG" \
-            --title "CherryDrop $TAG" \
-            --generate-notes || true
+          if ! gh release view "$TAG" --json id &>/dev/null; then
+            gh release create "$TAG" \
+              --title "CherryDrop $TAG" \
+              --generate-notes
+          fi
           find artifacts -type f -exec gh release upload "$TAG" {} --clobber \;
