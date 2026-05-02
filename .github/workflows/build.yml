@@ -101,15 +101,23 @@ jobs:
              if [[ -n "$APP_DIR" ]]; then \
                find "$APP_DIR" -name '*__mypyc.*' -delete 2>/dev/null || true && \
                mv "$APP_DIR" "CherryDrop.app" && \
+               APP="CherryDrop.app/Contents/MacOS" && \
                # 清理无用 Qt 框架模块（节省 ~50MB）
                echo ">>> Cleaning up unnecessary Qt frameworks..." && \
-               (cd "CherryDrop.app/Contents/MacOS" && \
+               (cd "$APP" && \
                 rm -rf QtMultimedia QtMultimediaWidgets QtPrintSupport \
-                       QtSvg QtWebSockets QtQuick QtQml QtQmlModels QtDBus && \
-                rm -f aria2c-arm64) && \
+                       QtSvg QtWebSockets QtQuick QtQml QtQmlModels QtDBus) && \
                # 清理无用 Qt 插件
-               (cd "CherryDrop.app/Contents/MacOS/PyQt5/qt-plugins" && \
-                rm -rf printsupport mediaservice iconengines) && \
+               (cd "$APP/PyQt5/qt-plugins" && rm -rf printsupport mediaservice iconengines) && \
+               # 只保留当前架构的 aria2 二进制
+               BIN_PATH="$APP/resources/bin/darwin" && \
+               if [[ "${{ runner.arch }}" == "ARM64" ]]; then \
+                 echo ">>> Apple Silicon build: keeping arm64 aria2" && \
+                 mv "$BIN_PATH/aria2c-arm64" "$BIN_PATH/aria2c"; \
+               else \
+                 echo ">>> Intel build: removing arm64 aria2" && \
+                 rm -f "$BIN_PATH/aria2c-arm64"; \
+               fi && \
                ARCH="${{ runner.arch == 'ARM64' && 'arm64' || 'x86_64' }}" && \
                ZIP_NAME="CherryDrop-macOS-${ARCH}.zip" && \
                zip -r "$ZIP_NAME" "CherryDrop.app" && \
