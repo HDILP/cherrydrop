@@ -47,10 +47,10 @@ jobs:
             VERSION="0.0.0"
           fi
 
-          # 各平台 Nuitka 模式：macOS 需 --mode=app + --onefile
+          # 各平台 Nuitka 模式：macOS 需 --mode=app (打包为 .app bundle)
           NUITKA_MODE="--mode=onefile"
           if [[ "${{ runner.os }}" == "macOS" ]]; then
-            NUITKA_MODE="--mode=app --onefile"
+            NUITKA_MODE="--mode=app"
           fi
 
           NUITKA_OPTS=""
