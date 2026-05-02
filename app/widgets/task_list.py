@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QLabel, QMenu, QAction
 )
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QDragEnterEvent, QDropEvent
 
 from app.widgets.progress_bar import GlassProgressBar
 
@@ -88,6 +88,7 @@ class TaskList(QListWidget):
     resume_requested = pyqtSignal(str)
     remove_requested = pyqtSignal(str)
     open_folder_requested = pyqtSignal(str)
+    url_dropped = pyqtSignal(str)        # 拖拽 URL
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -99,6 +100,55 @@ class TaskList(QListWidget):
         self.setVerticalScrollMode(self.ScrollPerPixel)
         self.setSpacing(2)
 
+        # 空状态提示
+        self.empty_label = QLabel("🌸 暂无下载任务\n点击 ➕ 添加一个吧")
+        self.empty_label.setAlignment(Qt.AlignCenter)
+        self.empty_label.setStyleSheet("color: rgba(0,0,0,0.2); font-size: 14px; padding: 40px;")
+        self.empty_label.setParent(self.viewport())
+        self.empty_label.setGeometry(0, 0, self.width(), self.height())
+
+        # 启用拖拽
+        self.setAcceptDrops(True)
+
+    def resizeEvent(self, event):
+        """窗口大小变化时重设空状态位置"""
+        super().resizeEvent(event)
+        self.empty_label.setGeometry(0, 0, self.width(), self.height())
+
+    def _update_empty_state(self):
+        """根据任务数量显示/隐藏空状态"""
+        has_tasks = self.count() > 0
+        self.empty_label.setVisible(not has_tasks)
+
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        """拖拽进入时检查是否为 URL"""
+        mime = event.mimeData()
+        if mime.hasUrls() or mime.hasText():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event: QDropEvent):
+        """放下时提取 URL 并发射信号"""
+        mime = event.mimeData()
+        urls = []
+        if mime.hasUrls():
+            for url in mime.urls():
+                u = url.toString().strip()
+                if u:
+                    urls.append(u)
+        if not urls and mime.hasText():
+            text = mime.text().strip()
+            # 检查文本是否包含 URL
+            import re
+            url_pattern = re.compile(
+                r'https?://[^\s<>"\'()]+|'
+                r'magnet:\?xt=urn:btih:[^\s<>"\'()]+|'
+                r'ed2k://[^\s<>"\'()]+'
+            )
+            urls = url_pattern.findall(text)
+        for url in urls:
+            self.url_dropped.emit(url)
+        event.acceptProposedAction()
+
     def add_task(self, gid: str, filename: str) -> TaskItemWidget:
         """添加新任务到列表"""
         widget = TaskItemWidget(gid, filename)
@@ -108,6 +158,7 @@ class TaskList(QListWidget):
         item.setData(Qt.UserRole, gid)
         self.addItem(item)
         self.setItemWidget(item, widget)
+        self._update_empty_state()
         return widget
 
     def get_task_widget(self, gid: str) -> TaskItemWidget:
@@ -125,6 +176,7 @@ class TaskList(QListWidget):
         for i in range(self.count()):
             if self.item(i).data(Qt.UserRole) == gid:
                 self.takeItem(i)
+                self._update_empty_state()
                 break
 
     def _show_context_menu(self, pos):

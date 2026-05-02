@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <defs>
+    <linearGradient id="petal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffd1d6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffaab2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="petal2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffc1c8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff8a95;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- 背景圆 -->
+  <circle cx="24" cy="24" r="22" fill="#fff5f6" stroke="#ffaab2" stroke-width="0.5" opacity="0.9"/>
+  <!-- 花瓣1 - 右上 -->
+  <path d="M24,13 C28,8 33,9 32,14 C31,18 27,19 24,17 Z" fill="url(#petal)" opacity="0.9"/>
+  <!-- 花瓣2 - 左下 -->
+  <path d="M24,13 C20,8 15,9 16,14 C17,18 21,19 24,17 Z" fill="url(#petal)" opacity="0.7"/>
+  <!-- 花瓣3 - 右 -->
+  <path d="M28,17 C33,14 35,18 31,20 C28,22 27,20 28,17 Z" fill="url(#petal2)" opacity="0.85"/>
+  <!-- 花瓣4 - 左 -->
+  <path d="M20,17 C15,14 13,18 17,20 C20,22 21,20 20,17 Z" fill="url(#petal2)" opacity="0.75"/>
+  <!-- 花瓣5 - 下 -->
+  <path d="M24,17 C27,12 21,12 24,17 Z" fill="url(#petal)" opacity="0.8"/>
+  <!-- 花蕊 -->
+  <circle cx="24" cy="17" r="2.5" fill="#ffe066"/>
+  <circle cx="24" cy="17" r="1.2" fill="#ffd633"/>
+  <!-- 下载箭头 -->
+  <path d="M24,26 L24,36 M19,31 L24,36 L29,31" stroke="#ffaab2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>

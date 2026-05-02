@@ -62,10 +62,30 @@ class MainWindow(QMainWindow):
         if self.config.get("auto_start_aria2", True):
             QTimer.singleShot(500, self._start_aria2)
 
-        # 定时刷新
+        # 自适应刷新
         self._refresh_timer = QTimer(self)
         self._refresh_timer.timeout.connect(self._refresh_tasks)
-        self._refresh_timer.start(2000)  # 每2秒刷新
+        self._refresh_timer.start(2000)  # 初始 2s，由 _refresh_tasks 动态调整
+
+    def _adjust_refresh_interval(self, downloads: list):
+        """根据当前任务状态自适应刷新间隔"""
+        if not downloads:
+            # 无任务 → 5s
+            if self._refresh_timer.interval() != 5000:
+                self._refresh_timer.setInterval(5000)
+            return
+        has_active = any(
+            getattr(dl, "status", "") in ("active", "waiting")
+            for dl in downloads
+        )
+        if has_active:
+            # 有活跃下载 → 1s
+            if self._refresh_timer.interval() != 1000:
+                self._refresh_timer.setInterval(1000)
+        else:
+            # 只有已完成/暂停 → 3s
+            if self._refresh_timer.interval() != 3000:
+                self._refresh_timer.setInterval(3000)
 
     def _center(self):
         screen = QApplication.primaryScreen().geometry()
@@ -121,6 +141,7 @@ class MainWindow(QMainWindow):
         self.task_list.resume_requested.connect(self._on_resume)
         self.task_list.remove_requested.connect(self._on_remove)
         self.task_list.open_folder_requested.connect(self._on_open_folder)
+        self.task_list.url_dropped.connect(self._on_dropped_url)
 
         layout.addWidget(self.task_list, 1)
         central.setLayout(layout)
@@ -137,9 +158,15 @@ class MainWindow(QMainWindow):
 
     def _init_tray(self):
         self.tray_icon = QSystemTrayIcon(self)
-        # 用文字图标凑合，可后续替换为真实图标
-        icon = QIcon.fromTheme("document-save")
-        self.tray_icon.setIcon(icon)
+        # 加载 SVG 图标
+        icon_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "resources", "icons", "cherrydrop.svg"
+        )
+        if os.path.exists(icon_path):
+            self.tray_icon.setIcon(QIcon(icon_path))
+        else:
+            self.tray_icon.setIcon(QIcon.fromTheme("document-save"))
         self.tray_icon.setToolTip("CherryDrop")
 
         tray_menu = QMenu()
@@ -187,6 +214,15 @@ class MainWindow(QMainWindow):
                 filename = "磁力链接 - 等待元数据..."
             self.task_list.add_task(gid, filename)
 
+    def _on_dropped_url(self, url: str):
+        """处理拖拽放入的 URL"""
+        gid = self.aria2.add_uri(url)
+        if gid:
+            filename = url.split("/")[-1] if "://" in url else url[:30] + "..."
+            if "magnet" in url:
+                filename = "磁力链接 - 等待元数据..."
+            self.task_list.add_task(gid, filename)
+
     def _show_settings(self):
         dialog = SettingsDialog(self.config, self)
         dialog.exec_()
@@ -212,11 +248,12 @@ class MainWindow(QMainWindow):
             subprocess.Popen(["xdg-open", download_dir])
 
     def _refresh_tasks(self):
-        """每2秒刷新任务列表"""
+        """根据定时刷新任务状态"""
         if not self.aria2.is_running:
             return
 
         downloads = self.aria2.get_downloads()
+        self._adjust_refresh_interval(downloads)
         if not downloads:
             return
 

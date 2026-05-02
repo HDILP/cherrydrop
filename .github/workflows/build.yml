@@ -32,9 +32,6 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get install -y patchelf ccache
 
-      - name: Download aria2 binary
-        run: python scripts/download_aria2.py
-
       - name: Build with Nuitka (onefile)
         run: |
           python -m nuitka \

@@ -21,6 +21,9 @@ settings.json
 aria2.session
 dht.dat
 
+# Single instance lock
+.cherrydrop.lock
+
 # Editor temp
 *.swp
 *.swo

@@ -138,16 +138,32 @@ class Aria2Client:
         bt_tracker = self.config.get("bt_tracker", "")
         if bt_tracker:
             args.append(f"--bt-tracker={bt_tracker}")
-        # 代理支持
-        proxy = self.config.get("proxy", "")
-        if proxy:
-            args.append(f"--all-proxy={proxy}")
+        # 代理支持（从分字段配置拼接完整地址）
+        proxy_enable = self.config.get("proxy_enable", False)
+        if proxy_enable:
+            proxy_type = self.config.get("proxy_type", "socks5")
+            proxy_host = self.config.get("proxy_host", "127.0.0.1")
+            proxy_port = self.config.get("proxy_port", 1080)
+            proxy_user = self.config.get("proxy_user", "")
+            proxy_pass = self.config.get("proxy_pass", "")
+            proxy_url = f"{proxy_type}://{proxy_host}:{proxy_port}"
+            if proxy_user and proxy_pass:
+                proxy_url = f"{proxy_type}://{proxy_user}:{proxy_pass}@{proxy_host}:{proxy_port}"
+            elif proxy_user:
+                proxy_url = f"{proxy_type}://{proxy_user}@{proxy_host}:{proxy_port}"
+            args.append(f"--all-proxy={proxy_url}")
         return args
 
     def start(self) -> bool:
         """启动 aria2c 后台进程并连接 RPC"""
         if self._running:
             return True
+
+        # 检查 aria2c 二进制是否存在
+        binary = self._find_aria2_binary()
+        if not binary:
+            logger.error("aria2c 未找到（内置二进制缺失且系统 PATH 中无 aria2c）")
+            return False
 
         try:
             # 启动 aria2c 子进程
