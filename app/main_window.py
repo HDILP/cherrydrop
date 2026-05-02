@@ -185,6 +185,8 @@ class MainWindow(QMainWindow):
         self.tray_icon.show()
 
     def show_and_activate(self):
+        # macOS 下如果窗口状态为最小化/隐藏，仅 show() 可能不会把主窗体带到前台
+        self.setWindowState((self.windowState() & ~Qt.WindowMinimized) | Qt.WindowActive)
         self.show()
         self.raise_()
         self.activateWindow()
