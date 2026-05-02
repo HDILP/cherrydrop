@@ -9,7 +9,7 @@
 | 前端 | PyQt5 (毛玻璃主题 QSS) |
 | 引擎 | aria2 RPC (内置 aria2c 二进制) |
 | 打包 | Nuitka 4.0.8 → 单文件 / .app |
-| CI/CD | GitHub Actions (4 平台矩阵) |
+|| CI/CD | GitHub Actions (4 平台矩阵 + 自动发布) |
 
 ## 项目结构
 
@@ -74,6 +74,12 @@ cherrydrop/
 - `Config.save()`: 加 try/except 防写失败崩溃
 - `Config.get_download_dir()`: 目录创建失败时回退 `~/Downloads`
 
+### PR #2 — 每次构建自动发布到 GitHub Releases
+- 移除 Release job 的 `if: startsWith(github.ref, 'refs/tags/')` 限制
+- 非 tag 构建 → 创建预发布 `build-<run_number>`（带 CI 运行链接）
+- tag 构建 → 正常发布（`--generate-notes`）
+- 所有平台产物自动上传到对应 release
+
 ## CI 踩坑 (Nuitka #3777)
 
 Intel macOS 的 Nuitka 4.0.8 dylib 扫描器遇见链接 Homebrew OpenSSL 的 Python 会 FATAL crash。
@@ -83,3 +89,6 @@ Intel macOS 的 Nuitka 4.0.8 dylib 扫描器遇见链接 Homebrew OpenSSL 的 Py
 ## 发布
 
 v0.1.0: https://github.com/HDILP/cherrydrop/releases/tag/v0.1.0
+
+> **自动发布机制:** 每次 push 到 main → CI 自动构建并创建 `build-<run_number>` 预发布（含产物下载链接）；
+> 推送 tag → 创建正式 release。无需手动发布。详见 PR #2。

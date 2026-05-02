@@ -18,6 +18,13 @@
   - `main()`: QApplication 移到单例检查前 (否则 MessageBox 无法弹出)
   - 高 DPI 支持 (`AA_EnableHighDpiScaling`, `AA_UseHighDpiPixmaps`)
   - `config.py`: save() 加 try/except; get_download_dir() 失败时回退 ~/Downloads
+- [x] **PR #2** (codex/modify-ci-release-process-for-github): 每次构建都发布到 GitHub Releases
+  - 移除 `if: startsWith(github.ref, 'refs/tags/')` 限制
+  - 非 tag 构建 → 创建预发布 `build-<run_number>`，带 CI 链接
+  - tag 构建 → 正常发布，`--generate-notes`
+  - 所有平台产物自动上传对应 release
+
+### 全部迭代已完成 🎉
 
 ### CI/CD 状态 (2026-05-02)
 - ✅ Linux (ubuntu-latest) — 构建通过
@@ -25,6 +32,7 @@
 - ✅ macOS ARM64 (macos-latest) — 构建通过
 - ✅ macOS Intel (macos-15-intel) — ✅ Run #47 通过 (uv Python 方案)
 - ✅ **双 macOS 矩阵**: Intel + ARM 各产一个 .zip, 含对应架构 aria2c
+- ✅ **自动发布**: 每次 push/main 构建 → 预发布 `build-<run_number>`；tag 推送 → 正式 release
 - ⚠️ **体积**: PyQt5 ~50-70MB 基线, `--nofollow-import-to=PyQt5.QtWebEngine,...` 已排除大模块
 
 **CI 踩坑记录:**

@@ -47,7 +47,8 @@ python -m nuitka \
     main.py
 
 # 方式三: GitHub Actions
-# 推送 tag v* 即可自动构建
+# 每次 push 到 main 自动构建并发布预发布: build-<run_number>
+# 推送 tag v* 自动构建并发布正式 release
 git tag v0.1.0
 git push origin v0.1.0
 ```
