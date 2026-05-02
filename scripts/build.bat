@@ -5,8 +5,7 @@ echo === 🌸 CherryDrop Build ===
 
 echo ^>^>^> 构建单文件...
 python -m nuitka ^
-    --standalone ^
-    --onefile ^
+    --mode=onefile ^
     --enable-plugin=pyqt5 ^
     --follow-imports ^
     --include-data-dir=resources/bin=resources/bin ^
