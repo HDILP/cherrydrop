@@ -529,7 +529,7 @@ class Aria2Client:
         import shutil
         # 1. 检查打包的二进制（resources/bin/ 目录）
         import os
-        base = os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources", "bin")
+        base = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "resources", "bin")
         import platform, sys
         system = platform.system().lower()
         if system == "windows":
@@ -642,21 +642,25 @@ class Aria2Client:
                 stderr=subprocess.DEVNULL,
             )
 
-            # 等 aria2c 启动
-            time.sleep(1.5)
+            # 等 aria2c 启动 (轮询端口，最多等 5 秒)
+            import socket
+            rpc_port = 6800
+            for _ in range(10):
+                try:
+                    s = socket.create_connection(("127.0.0.1", rpc_port), timeout=0.5)
+                    s.close()
+                    break
+                except (ConnectionRefusedError, OSError):
+                    time.sleep(0.5)
+            else:
+                raise RuntimeError(f"aria2c 在 5 秒内未在端口 {rpc_port} 上启动")
 
             # 连接 RPC
-            rpc_url = self.config.get("aria2_rpc_url", "http://localhost:6800/rpc")
-            rpc_token = self.config.get("aria2_rpc_token", "")
-
-            if rpc_token:
-                client = aria2p.Client(host=rpc_url, secret=rpc_token)
-            else:
-                client = aria2p.Client(host=rpc_url)
+            client = aria2p.Client(port=6800)
 
             self._api = aria2p.API(client)
             # 测试连接
-            self._api.get_version()
+            client.get_version()
             self._running = True
             logger.info("aria2c 启动成功")
             return True
