@@ -35,7 +35,7 @@ bash scripts/build.sh          # Linux/macOS
 # 方式二: 手动构建
 pip install nuitka requests
 python -m nuitka \
-    --standalone --onefile \
+    --mode=onefile \
     --enable-plugin=pyqt5 \
     --include-data-dir=resources/bin=resources/bin \
     --include-data-dir=resources/icons=resources/icons \
