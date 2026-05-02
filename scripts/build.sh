@@ -4,10 +4,6 @@ set -e
 
 echo "=== 🌸 CherryDrop Build ==="
 
-# 下载 aria2 二进制
-echo ">>> 下载 aria2..."
-python scripts/download_aria2.py
-
 # 构建
 echo ">>> 构建单文件..."
 python -m nuitka \

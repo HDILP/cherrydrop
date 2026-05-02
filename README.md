@@ -34,7 +34,6 @@ bash scripts/build.sh          # Linux/macOS
 
 # 方式二: 手动构建
 pip install nuitka requests
-python scripts/download_aria2.py
 python -m nuitka \
     --standalone --onefile \
     --enable-plugin=pyqt5 \
@@ -72,11 +71,12 @@ cherrydrop/
 │       └── theme.py           # QSS 主题加载
 ├── resources/
 │   ├── aria2.conf             # aria2 配置 (来自 motrix-next)
-│   ├── bin/linux/aria2c       # 内置 aria2 二进制 (v1.36.0)
-│   ├── icons/                 # SVG 图标 (TODO)
+│   ├── bin/linux/aria2c       # 内置 aria2 二进制 (各平台)
+│   ├── bin/darwin/aria2c
+│   ├── bin/win64/aria2c.exe
+│   ├── icons/cherrydrop.svg   # SVG 樱花图标
 │   └── themes/cherry.qss      # 浅色毛玻璃主题
 ├── scripts/
-│   ├── download_aria2.py      # 多平台 aria2 二进制下载
 │   ├── build.sh               # Linux/macOS 构建脚本
 │   └── build.bat              # Windows 构建脚本
 ├── .github/workflows/

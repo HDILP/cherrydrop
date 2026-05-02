@@ -1,9 +1,7 @@
 @echo off
 REM CherryDrop Windows 本地构建脚本
-echo === 🌸 CherryDrop Build ===
 
-echo ^>^>^> 下载 aria2...
-python scripts/download_aria2.py
+echo === 🌸 CherryDrop Build ===
 
 echo ^>^>^> 构建单文件...
 python -m nuitka ^
