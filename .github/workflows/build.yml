@@ -53,8 +53,10 @@ jobs:
           # Remove OpenSSL dylibs + any symlinks (including broken ones)
           for f in /usr/local/opt/openssl@3/lib/libssl*.dylib /usr/local/opt/openssl@3/lib/libcrypto*.dylib; do
             if [ -f "$f" ] || [ -L "$f" ]; then
-              cp -L "$f" /tmp/nuitka-dylib-bak/ 2>/dev/null; rm -f "$f"; echo "Removed: $(basename $f)"
-            fi
+              cp -L "$f" /tmp/nuitka-dylib-bak/ 2>/dev/null
+              rm -f "$f"
+              echo "Removed: $(basename $f)"
+            fi || true
           done
           ls -la /tmp/nuitka-dylib-bak/
 
