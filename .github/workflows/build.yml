@@ -39,25 +39,24 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install ccache
 
-      - name: Build with Nuitka (onefile)
+      - name: Build with Nuitka
         shell: bash
         run: |
-          # 设置版本号：tag 推送上来的用 tag 名，手动触发用 dev
+          # 设置版本号
           VERSION="${{ github.ref_name }}"
           if [[ "$VERSION" == v* ]]; then
-            VERSION="${VERSION#v}"  # 去掉 v 前缀
+            VERSION="${VERSION#v}"
           else
             VERSION="0.0.0"
           fi
 
-          # 各平台 Nuitka 模式：macOS 需 --mode=app (打包为 .app bundle)
+          # 各平台 Nuitka 模式
           NUITKA_MODE="--mode=onefile"
           if [[ "${{ runner.os }}" == "macOS" ]]; then
             NUITKA_MODE="--mode=app"
           fi
 
           NUITKA_OPTS=""
-          # Windows 需要自动下载依赖分析工具
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             NUITKA_OPTS="--assume-yes-for-downloads"
           fi
@@ -79,11 +78,25 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CherryDrop-${{ runner.os }}-${{ github.ref_name }}
+          name: CherryDrop-${{ runner.os }}
           path: dist/*
+          retention-days: 1
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: find artifacts -type f
 
       - name: Create release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/**
+          files: artifacts/**/*
+          generate_release_notes: true
