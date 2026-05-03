@@ -300,6 +300,9 @@ jobs:
             cd CherryDrop
 
             # ── --version ──
+            echo "--- Debug: CherryDrop/ contents ---"
+            ls -la
+            file main 2>/dev/null || echo "(main not found)"
             echo "--- Test: --version ---"
             ./main --version
 
