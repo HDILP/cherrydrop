@@ -64,6 +64,11 @@
 - brew 的 `$XZ_DIR` 变量名在 GitHub Actions YAML 中会被特殊处理 → 用绝对路径替代
 - `bash -e` 模式下 if 条件为 false 会直接退出 → 加 `|| true`
 - **macOS `.app` 内部二进制名来自源文件名**：`main.py` → `CherryDrop.app/Contents/MacOS/main`。Smoke test 中路径必须写 `main` 而非 `CherryDrop`
+- **Linux standalone 产出 `main.bin` 而非 `main`**：Nuitka 4.0.8 `--mode=standalone` 在 Linux 上编译出的主二进制名为 `main.bin`（macOS/Windows 上为 `.app/main` / `main.exe`）。UPX、smoke test 中必须写 `main.bin`
+- **Qt 清理三平台命名差异**：
+  - Linux: `libQt5<Module>.so.5`（需搜 `libQt5${m}.so*`）
+  - Windows: `qt5<module>.dll`（小写 + qt5 前缀）
+  - macOS: `Qt<Module>`（裸文件名）
 - **Nuitka 4.0.8 通配符不覆盖白名单**：`--nofollow-import-to=PyQt5.*` + `--follow-import-to=QtWidgets` 不可行，通配符会连带白名单模块也排除。必须用显式黑名单逐项列出不需要的模块
 
 ### 发布
