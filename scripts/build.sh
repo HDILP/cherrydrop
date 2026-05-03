@@ -15,7 +15,7 @@ esac
 if [[ "$(uname -s)" == "Darwin" ]]; then
   NUITKA_MODE="--mode=app"
 else
-  NUITKA_MODE="--standalone"
+  NUITKA_MODE="--mode=standalone"
 fi
 
 # 构建

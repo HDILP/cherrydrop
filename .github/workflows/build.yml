@@ -69,7 +69,7 @@ jobs:
             VERSION="0.0.0"
           fi
 
-          NUITKA_MODE="--standalone"
+          NUITKA_MODE="--mode=standalone"
           if [[ "${{ runner.os }}" == "macOS" ]]; then
             NUITKA_MODE="--mode=app"
           fi
