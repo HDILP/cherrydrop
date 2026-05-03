@@ -113,7 +113,8 @@ jobs:
           ls -la dist/
 
           # 删除构建中间文件
-          rm -rf dist/*.onefile-build dist/*.dist dist/*.build 2>/dev/null || true
+          # 只删 onefile 构建中间件，不删 standalone 输出 (dist/*.dist 会匹配 main.dist!)
+          rm -rf dist/*.onefile-build dist/*.build 2>/dev/null || true
 
           # ----------------------------------------------------------------
           # Qt 冗余框架清理（所有平台通用）
