@@ -71,7 +71,7 @@ cherrydrop/
 - Nuitka 4.0.8 → `--mode=app` (macOS) / `--mode=onefile` (Linux/Windows)
 - macOS 双 runner: `macos-latest` (ARM) + `macos-15-intel` (x86_64)
 - 每个 .app 只含对应架构的 aria2c
-- **PyQt5 白名单**: `--nofollow-import-to=PyQt5.*` + `--follow-import-to=QtWidgets,QtCore,QtGui`（只包这 3 个模块，新增不遗漏）
+- **PyQt5 黑名单全覆盖**: 44 个无用模块列在 `--nofollow-import-to`，只留 QtWidgets/Core/Gui（Nuitka 4.0.8 通配符白名单不生效，改显式黑名单兜底）
 
 ## 已知修复
 

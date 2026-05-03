@@ -49,7 +49,7 @@
   - Windows: --version + 真实 HTTP 下载测试
   - 测试 URL: repo 自身 README.md (GitHub raw)
 - ⚠️ **体积**: PyQt5 ~50-70MB 基线，Nuitka 4.0.8 不支持 `--strip` / `--upx`
-- ✅ **PyQt5 白名单模式**: `--nofollow-import-to=PyQt5.*` + `--follow-import-to=QtWidgets,QtCore,QtGui` 精准控制捆绑，新增模块不会漏入包
+- ✅ **PyQt5 黑名单全覆盖**: 44 个无用模块全部列在 `--nofollow-import-to`，只留 QtWidgets/Core/Gui（Nuitka 4.0.8 通配符白名单不生效，改用显式黑名单兜底）
 
 **CI 踩坑记录:**
 - **Nuitka bug #3777** (Intel macOS): Nuitka 4.0.8 dylib 扫描器遇见链接 Homebrew OpenSSL 的 Python 会 FATAL crash。最终方案：**全线 macOS 用 uv Python**（uv standalone Python 自带 OpenSSL，不依赖 Homebrew）。修了 ~10 次才搞定，别走回头路。
@@ -61,6 +61,7 @@
 - brew 的 `$XZ_DIR` 变量名在 GitHub Actions YAML 中会被特殊处理 → 用绝对路径替代
 - `bash -e` 模式下 if 条件为 false 会直接退出 → 加 `|| true`
 - **macOS `.app` 内部二进制名来自源文件名**：`main.py` → `CherryDrop.app/Contents/MacOS/main`。Smoke test 中路径必须写 `main` 而非 `CherryDrop`
+- **Nuitka 4.0.8 通配符不覆盖白名单**：`--nofollow-import-to=PyQt5.*` + `--follow-import-to=QtWidgets` 不可行，通配符会连带白名单模块也排除。必须用显式黑名单逐项列出不需要的模块
 
 ### 发布
 - ✅ **v0.1.0 已发布**: https://github.com/HDILP/cherrydrop/releases/tag/v0.1.0
