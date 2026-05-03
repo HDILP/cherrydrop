@@ -38,7 +38,8 @@ python -m nuitka \
     --mode=onefile \
     --enable-plugin=pyqt5 \
     --follow-imports \
-    --nofollow-import-to=PyQt5.QtWebEngine,PyQt5.QtMultimedia \
+    --nofollow-import-to=PyQt5.* \
+    --follow-import-to=PyQt5.QtWidgets,PyQt5.QtCore,PyQt5.QtGui \
     --include-data-dir=resources/bin/linux=resources/bin/linux \
     --include-data-file=resources/aria2.conf=resources/aria2.conf \
     --include-data-dir=resources/icons=resources/icons \

@@ -93,7 +93,8 @@ jobs:
             $NUITKA_OPTS \
             --enable-plugin=pyqt5 \
             --follow-imports \
-            --nofollow-import-to=PyQt5.QtWebEngine,PyQt5.QtMultimedia,PyQt5.QtPrintSupport,PyQt5.QtSvg,PyQt5.QtWebSockets,PyQt5.QtQuick,PyQt5.QtQml,PyQt5.QtQmlModels,PyQt5.QtDBus \
+            --nofollow-import-to=PyQt5.* \
+            --follow-import-to=PyQt5.QtWidgets,PyQt5.QtCore,PyQt5.QtGui \
             --nofollow-import-to=tkinter,unittest,pdb,test,distutils,ensurepip,venv,lib2to3,idlelib,turtle,cgi,smtplib,poplib,imaplib,ftplib,telnetlib,nntplib \
             --include-data-dir="$BIN_DIR" \
             --include-data-file=resources/aria2.conf=resources/aria2.conf \

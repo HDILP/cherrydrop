@@ -71,7 +71,7 @@ cherrydrop/
 - Nuitka 4.0.8 → `--mode=app` (macOS) / `--mode=onefile` (Linux/Windows)
 - macOS 双 runner: `macos-latest` (ARM) + `macos-15-intel` (x86_64)
 - 每个 .app 只含对应架构的 aria2c
-- 体积优化：排除 QtWebEngine/QtMultimedia/无用 Qt 插件
+- **PyQt5 白名单**: `--nofollow-import-to=PyQt5.*` + `--follow-import-to=QtWidgets,QtCore,QtGui`（只包这 3 个模块，新增不遗漏）
 
 ## 已知修复
 

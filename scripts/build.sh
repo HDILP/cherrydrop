@@ -24,8 +24,8 @@ python -m nuitka \
     $NUITKA_MODE \
     --enable-plugin=pyqt5 \
     --follow-imports \
-    --nofollow-import-to=PyQt5.QtWebEngine \
-    --nofollow-import-to=PyQt5.QtMultimedia \
+    --nofollow-import-to=PyQt5.* \
+    --follow-import-to=PyQt5.QtWidgets,PyQt5.QtCore,PyQt5.QtGui \
     --nofollow-import-to=tkinter,unittest,pdb,test,distutils,ensurepip,venv,lib2to3,idlelib,turtle,cgi,smtplib,poplib,imaplib,ftplib,telnetlib,nntplib \
     --include-data-dir="$BIN_DIR" \
     --include-data-file=resources/aria2.conf=resources/aria2.conf \

@@ -8,6 +8,8 @@ python -m nuitka ^
     --mode=onefile ^
     --enable-plugin=pyqt5 ^
     --follow-imports ^
+    --nofollow-import-to=PyQt5.* ^
+    --follow-import-to=PyQt5.QtWidgets,PyQt5.QtCore,PyQt5.QtGui ^
     --include-data-dir=resources/bin=resources/bin ^
     --include-data-dir=resources/icons=resources/icons ^
     --include-data-dir=resources/themes=resources/themes ^

@@ -48,7 +48,8 @@
   - macOS: .app bundle 完整性 + aria2c 捆绑检查 + 真实 HTTP 下载测试
   - Windows: --version + 真实 HTTP 下载测试
   - 测试 URL: repo 自身 README.md (GitHub raw)
-- ⚠️ **体积**: PyQt5 ~50-70MB 基线, `--nofollow-import-to=PyQt5.QtWebEngine,...` 已排除大模块
+- ⚠️ **体积**: PyQt5 ~50-70MB 基线，Nuitka 4.0.8 不支持 `--strip` / `--upx`
+- ✅ **PyQt5 白名单模式**: `--nofollow-import-to=PyQt5.*` + `--follow-import-to=QtWidgets,QtCore,QtGui` 精准控制捆绑，新增模块不会漏入包
 
 **CI 踩坑记录:**
 - **Nuitka bug #3777** (Intel macOS): Nuitka 4.0.8 dylib 扫描器遇见链接 Homebrew OpenSSL 的 Python 会 FATAL crash。最终方案：**全线 macOS 用 uv Python**（uv standalone Python 自带 OpenSSL，不依赖 Homebrew）。修了 ~10 次才搞定，别走回头路。
