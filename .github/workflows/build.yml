@@ -132,7 +132,7 @@ jobs:
             for m in QtQml QtQuick QtQuick3D QtQuickWidgets QtQmlModels; do
               find "$TARGET" -maxdepth 2 -name "${m}${ext}" -exec rm -f {} + 2>/dev/null || true
               # Windows: qt5 prefix + lowercase (qt5qml.dll)
-              local win_n="${m#Qt}"; win_n="qt5${win_n,,}"
+              local win_raw="${m#Qt}"; win_n="qt5$(echo "$win_raw" | tr "[:upper:]" "[:lower:]")"
               find "$TARGET" -maxdepth 2 -name "${win_n}${ext}" -exec rm -f {} + 2>/dev/null || true
               # Linux: libQt5 prefix (libQt5Multimedia.so.5)
               local lin_n="${m#Qt}"
@@ -146,7 +146,7 @@ jobs:
                      QtTest QtSerialPort QtRemoteObjects QtTextToSpeech \
                      QtX11Extras QtConcurrent QtOpenGL QtSvg QtDBus; do
               find "$TARGET" -maxdepth 2 -name "${m}${ext}" -exec rm -f {} + 2>/dev/null || true
-              local win_n="${m#Qt}"; win_n="qt5${win_n,,}"
+              local win_raw="${m#Qt}"; win_n="qt5$(echo "$win_raw" | tr "[:upper:]" "[:lower:]")"
               find "$TARGET" -maxdepth 2 -name "${win_n}${ext}" -exec rm -f {} + 2>/dev/null || true
               local lin_n="${m#Qt}"
               find "$TARGET" -maxdepth 2 -name "libQt5${lin_n}${ext}" -exec rm -f {} + 2>/dev/null || true
@@ -155,7 +155,7 @@ jobs:
             # Qt3D 系
             for m in Qt3DCore Qt3DRender Qt3DInput Qt3DLogic Qt3DAnimation Qt3DExtras; do
               find "$TARGET" -maxdepth 2 -name "${m}${ext}" -exec rm -f {} + 2>/dev/null || true
-              local win_n="${m#Qt}"; win_n="qt5${win_n,,}"
+              local win_raw="${m#Qt}"; win_n="qt5$(echo "$win_raw" | tr "[:upper:]" "[:lower:]")"
               find "$TARGET" -maxdepth 2 -name "${win_n}${ext}" -exec rm -f {} + 2>/dev/null || true
               local lin_n="${m#Qt}"
               find "$TARGET" -maxdepth 2 -name "libQt5${lin_n}${ext}" -exec rm -f {} + 2>/dev/null || true
@@ -164,7 +164,7 @@ jobs:
             # 其他模块
             for m in QtScxml QtStateMachine QtCharts QtDataVisualization QtNetworkAuth; do
               find "$TARGET" -maxdepth 2 -name "${m}${ext}" -exec rm -f {} + 2>/dev/null || true
-              local win_n="${m#Qt}"; win_n="qt5${win_n,,}"
+              local win_raw="${m#Qt}"; win_n="qt5$(echo "$win_raw" | tr "[:upper:]" "[:lower:]")"
               find "$TARGET" -maxdepth 2 -name "${win_n}${ext}" -exec rm -f {} + 2>/dev/null || true
               local lin_n="${m#Qt}"
               find "$TARGET" -maxdepth 2 -name "libQt5${lin_n}${ext}" -exec rm -f {} + 2>/dev/null || true
@@ -373,7 +373,9 @@ jobs:
               exit 1
             fi
             echo "--- Unpacking: $PACKAGE ---"
-            7z x -y "$PACKAGE" -oCherryDrop >/dev/null
+            # SFX 归档内含 CherryDrop/ 前缀（由 7z a CherryDrop CherryDrop 产生的目录结构），
+            # 所以直接解压到当前目录就行，不要用 -o 再套一层
+            7z x -y "$PACKAGE" >/dev/null
             cd CherryDrop
 
             echo "--- Test: --version ---"
