@@ -34,25 +34,39 @@
   - 失败时 exit 1，不创建临时文件残留
 - 这三个参数在 `QApplication` 创建前截获，无需显示器
 
-### CI/CD 状态 (2026-05-03，修复进行中)
+### CI/CD 状态 (2026-05-03) ✅ 全平台通过
 - ✅ **触发方式**: push main / push tag v* / workflow_dispatch
-- ✅ Linux (ubuntu-latest) — Nuitka 构建通过
-- ⚠️ Linux smoke test — `./main: No such file or directory`（tar.xz 内缺少 main 或动态库依赖）
-- ✅ macOS ARM64 (macos-latest) — 构建 + smoke test 全部通过
-- ✅ macOS Intel (macos-15-intel) — ✅ Run #47 通过 (uv Python 方案)
-- ✅ Windows (windows-latest) — Nuitka 构建通过
-- ⚠️ Windows packaging — 7z SFX 打包问题（已修反斜杠 bug，下次 CI 验证）
-- ✅ **双 macOS 矩阵**: Intel + ARM 各产一个 .zip, 含对应架构 aria2c
+- ✅ **Linux** (ubuntu-latest) — 构建 + smoke test 通过
+  - `main.bin` (Nuitka standalone 产出名，非 `main`)
+  - Qt 运行时清理: `libQt5*.so.5` 剔除无用模块
+  - UPX 压缩: `main.bin` + `aria2c`
+  - 最终产物: `CherryDrop.tar.xz` (~40MB)
+  - Smoke: `--version` ✓ + GUI(xvfb) ⚠ xcb 插件容错 + 真实下载 ✓
+- ✅ **macOS ARM** (macos-latest) — 构建 + smoke test 通过
+- ✅ **macOS Intel** (macos-15-intel) — 构建 + smoke test 通过
+  - Qt 运行时清理: 裸文件名 `Qt*`
+  - 最终产物: `.app.zip` (~25MB, 只含对应架构 aria2c)
+  - Smoke: `--version` ✓ + aria2c 捆绑检查 ✓ + 真实下载 ✓
+- ✅ **Windows** (windows-latest) — 构建 + smoke test 通过
+  - Qt 运行时清理: `qt5*.dll`（小写 + qt5 前缀）
+  - UPX 压缩: `main.exe` + `aria2c.exe`
+  - 最终产物: 7z SFX 自解压 `CherryDrop.exe` (~15MB)
+  - Smoke: `--version` ✓ + 真实下载 ✓
 - ✅ **自动发布**: 每次 push/main 构建 → 预发布 `build-<run_number>`；tag 推送 → 正式 release
-- ✅ **Smoke test** (构建后自动执行，失败 = 不上传 artifact):
+  - Release job 需 `actions/checkout@v4` + `download-artifact@v4`
+  - `upload-artifact@v4` 多路径需用 YAML 多行格式（空格分隔在 v4 中不生效）
+- ✅ **Smoke test** 覆盖:
   - `--version` 验证二进制可执行
-  - Linux: xvfb GUI 5s 不崩溃 + 真实 HTTP 下载测试
-  - macOS: .app bundle 完整性 + aria2c 捆绑检查 + 真实 HTTP 下载测试
-  - Windows: --version + 真实 HTTP 下载测试
+  - Linux: xvfb GUI 5s 不崩溃（xcb 插件缺失时跳过） + 真实 HTTP 下载
+  - macOS: .app bundle 完整性 + aria2c 捆绑检查 + 真实 HTTP 下载
+  - Windows: --version + 真实 HTTP 下载
   - 测试 URL: repo 自身 README.md (GitHub raw)
-- ✅ **PyQt5 黑名单全覆盖**: 44 个无用模块全部列在 `--nofollow-import-to`，只留 QtWidgets/Core/Gui（Nuitka 4.0.8 通配符白名单不生效，改用显式黑名单兜底）
-- ✅ **Qt 运行时清理**: Prepare artifacts 阶段删除无用 Qt `.so/.dll`（Linux/Win 命名不同需区分）
-- ✅ **UPX 压缩**: Linux `main` + `aria2c` 在 Prepare artifacts 阶段手动 UPX
+- ✅ **PyQt5 黑名单全覆盖**: 44 个无用模块全部列在 `--nofollow-import-to`，只留 QtWidgets/Core/Gui
+- ✅ **Qt 运行时清理三平台命名差异**:
+  - Linux: `libQt5<Module>.so.5` → 搜 `libQt5${m}.so*`
+  - Windows: `qt5<module>.dll` → 搜 `qt5$(echo ...).dll`（tr 小写，兼容 macOS bash 3.2）
+  - macOS: `Qt<Module>` → 搜 `Qt${m}`
+- ✅ **UPX 压缩**: 在 Prepare artifacts 阶段手动 UPX（非 Nuitka 内置）
 
 **CI 踩坑记录:**
 - **Nuitka bug #3777** (Intel macOS): Nuitka 4.0.8 dylib 扫描器遇见链接 Homebrew OpenSSL 的 Python 会 FATAL crash。最终方案：**全线 macOS 用 uv Python**（uv standalone Python 自带 OpenSSL，不依赖 Homebrew）。修了 ~10 次才搞定，别走回头路。

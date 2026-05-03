@@ -144,7 +144,7 @@ jobs:
                      QtWebChannel QtBluetooth QtNfc QtSensors QtPositioning QtLocation \
                      QtSql QtXml QtXmlPatterns QtHelp QtDesigner QtUiTools \
                      QtTest QtSerialPort QtRemoteObjects QtTextToSpeech \
-                     QtX11Extras QtConcurrent QtOpenGL QtSvg QtDBus; do
+                     QtX11Extras QtConcurrent QtOpenGL QtPrintSupport QtSvg QtDBus; do
               find "$TARGET" -maxdepth 2 -name "${m}${ext}" -exec rm -f {} + 2>/dev/null || true
               local win_raw="${m#Qt}"; win_n="qt5$(echo "$win_raw" | tr "[:upper:]" "[:lower:]")"
               find "$TARGET" -maxdepth 2 -name "${win_n}${ext}" -exec rm -f {} + 2>/dev/null || true
