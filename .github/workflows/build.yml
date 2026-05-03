@@ -229,13 +229,7 @@ jobs:
             mv "$TARGET" "dist/CherryDrop"
 
             # SFX config: 静默解压 + 自动运行
-            cat > dist/sfx_conf.txt << 'SFXEOF'
-;!@Install@!UTF-8!
-Title="CherryDrop 樱花下载器"
-RunProgram="CherryDrop\main.exe"
-GUIMode="2"
-;!@InstallEnd@!
-SFXEOF
+            printf ';!@Install@!UTF-8!\nTitle="CherryDrop 樱花下载器"\nRunProgram="CherryDrop\\main.exe"\nGUIMode="2"\n;!@InstallEnd@!\n' > dist/sfx_conf.txt
 
             # 构建 7z 归档 + 自解压
             cd dist
