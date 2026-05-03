@@ -134,6 +134,9 @@ jobs:
               # Windows: qt5 prefix + lowercase (qt5qml.dll)
               local win_n="${m#Qt}"; win_n="qt5${win_n,,}"
               find "$TARGET" -maxdepth 2 -name "${win_n}${ext}" -exec rm -f {} + 2>/dev/null || true
+              # Linux: libQt5 prefix (libQt5Multimedia.so.5)
+              local lin_n="${m#Qt}"
+              find "$TARGET" -maxdepth 2 -name "libQt5${lin_n}${ext}" -exec rm -f {} + 2>/dev/null || true
             done
 
             # 媒体/网络/数据库等无用模块
@@ -145,6 +148,8 @@ jobs:
               find "$TARGET" -maxdepth 2 -name "${m}${ext}" -exec rm -f {} + 2>/dev/null || true
               local win_n="${m#Qt}"; win_n="qt5${win_n,,}"
               find "$TARGET" -maxdepth 2 -name "${win_n}${ext}" -exec rm -f {} + 2>/dev/null || true
+              local lin_n="${m#Qt}"
+              find "$TARGET" -maxdepth 2 -name "libQt5${lin_n}${ext}" -exec rm -f {} + 2>/dev/null || true
             done
 
             # Qt3D 系
@@ -152,6 +157,8 @@ jobs:
               find "$TARGET" -maxdepth 2 -name "${m}${ext}" -exec rm -f {} + 2>/dev/null || true
               local win_n="${m#Qt}"; win_n="qt5${win_n,,}"
               find "$TARGET" -maxdepth 2 -name "${win_n}${ext}" -exec rm -f {} + 2>/dev/null || true
+              local lin_n="${m#Qt}"
+              find "$TARGET" -maxdepth 2 -name "libQt5${lin_n}${ext}" -exec rm -f {} + 2>/dev/null || true
             done
 
             # 其他模块
@@ -159,6 +166,8 @@ jobs:
               find "$TARGET" -maxdepth 2 -name "${m}${ext}" -exec rm -f {} + 2>/dev/null || true
               local win_n="${m#Qt}"; win_n="qt5${win_n,,}"
               find "$TARGET" -maxdepth 2 -name "${win_n}${ext}" -exec rm -f {} + 2>/dev/null || true
+              local lin_n="${m#Qt}"
+              find "$TARGET" -maxdepth 2 -name "libQt5${lin_n}${ext}" -exec rm -f {} + 2>/dev/null || true
             done
 
             # 清理无用 Qt 插件
@@ -203,7 +212,7 @@ jobs:
             cleanup_qt_fat "$TARGET"
 
             echo ">>> UPX compressing binaries..."
-            upx --best "$TARGET/main" 2>/dev/null || true
+            upx --best "$TARGET/main.bin" 2>/dev/null || true
             upx --best "$TARGET/resources/bin/linux/aria2c" 2>/dev/null || true
 
             echo ">>> After Qt cleanup:"
@@ -300,16 +309,14 @@ jobs:
             cd CherryDrop
 
             # ── --version ──
-            echo "--- Debug: CherryDrop/ contents ---"
-            ls -la
-            file main 2>/dev/null || echo "(main not found)"
             echo "--- Test: --version ---"
-            ./main --version
+            # Linux standalone: Nuitka 产出 main.bin（不是 main）
+            ./main.bin --version
 
             # ── xvfb GUI smoke (5s timeout → 124 = OK) ──
             echo "--- Test: xvfb GUI (5s timeout) ---"
             sudo apt-get install -y -qq xvfb
-            xvfb-run -a timeout 5 ./main 2>&1 && rc=$? || rc=$?
+            xvfb-run -a timeout 5 ./main.bin 2>&1 && rc=$? || rc=$?
             if [[ $rc -eq 124 ]]; then
               echo "✓ GUI started and ran 5s without crash"
             else
@@ -318,7 +325,7 @@ jobs:
 
             # ── Download test ──
             echo "--- Test: download ---"
-            ./main --download-url "$TEST_URL"
+            ./main.bin --download-url "$TEST_URL"
 
           elif [[ "${{ runner.os }}" == "macOS" ]]; then
             ZIP=$(ls *.zip 2>/dev/null | head -1)

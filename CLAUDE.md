@@ -34,12 +34,14 @@
   - 失败时 exit 1，不创建临时文件残留
 - 这三个参数在 `QApplication` 创建前截获，无需显示器
 
-### CI/CD 状态 (2026-05-03)
+### CI/CD 状态 (2026-05-03，修复进行中)
 - ✅ **触发方式**: push main / push tag v* / workflow_dispatch
-- ✅ Linux (ubuntu-latest) — 构建通过
-- ✅ Windows (windows-latest) — 构建通过
-- ✅ macOS ARM64 (macos-latest) — 构建通过
+- ✅ Linux (ubuntu-latest) — Nuitka 构建通过
+- ⚠️ Linux smoke test — `./main: No such file or directory`（tar.xz 内缺少 main 或动态库依赖）
+- ✅ macOS ARM64 (macos-latest) — 构建 + smoke test 全部通过
 - ✅ macOS Intel (macos-15-intel) — ✅ Run #47 通过 (uv Python 方案)
+- ✅ Windows (windows-latest) — Nuitka 构建通过
+- ⚠️ Windows packaging — 7z SFX 打包问题（已修反斜杠 bug，下次 CI 验证）
 - ✅ **双 macOS 矩阵**: Intel + ARM 各产一个 .zip, 含对应架构 aria2c
 - ✅ **自动发布**: 每次 push/main 构建 → 预发布 `build-<run_number>`；tag 推送 → 正式 release
 - ✅ **Smoke test** (构建后自动执行，失败 = 不上传 artifact):
@@ -48,14 +50,15 @@
   - macOS: .app bundle 完整性 + aria2c 捆绑检查 + 真实 HTTP 下载测试
   - Windows: --version + 真实 HTTP 下载测试
   - 测试 URL: repo 自身 README.md (GitHub raw)
-- ⚠️ **体积**: PyQt5 ~50-70MB 基线，Nuitka 4.0.8 不支持 `--strip` / `--upx`
 - ✅ **PyQt5 黑名单全覆盖**: 44 个无用模块全部列在 `--nofollow-import-to`，只留 QtWidgets/Core/Gui（Nuitka 4.0.8 通配符白名单不生效，改用显式黑名单兜底）
+- ✅ **Qt 运行时清理**: Prepare artifacts 阶段删除无用 Qt `.so/.dll`（Linux/Win 命名不同需区分）
+- ✅ **UPX 压缩**: Linux `main` + `aria2c` 在 Prepare artifacts 阶段手动 UPX
 
 **CI 踩坑记录:**
 - **Nuitka bug #3777** (Intel macOS): Nuitka 4.0.8 dylib 扫描器遇见链接 Homebrew OpenSSL 的 Python 会 FATAL crash。最终方案：**全线 macOS 用 uv Python**（uv standalone Python 自带 OpenSSL，不依赖 Homebrew）。修了 ~10 次才搞定，别走回头路。
 - Release job 必须加 `actions/checkout@v4` (gh CLI 需要 git 上下文)
-- 构建后必须清理 `dist/*.onefile-build dist/*.dist dist/*.build` 防止上传垃圾文件
-- Nuitka 4.0.8 不支持 `--upx` / `--strip` / `--include-data-dir` (单文件)
+- 构建后清理 `dist/*.onefile-build dist/*.build`（注意：**不要删 `dist/*.dist`**，那会删掉 standalone 输出 `main.dist`）
+- Nuitka 4.0.8 `--mode=standalone` 支持 `--include-data-dir`；UPX 在 Prepare artifacts 阶段手动执行（非 Nuitka 内置 `--upx`）
 - Release 用 `if ! gh release view; then create; fi` 而非 `|| true` (防静默吞错误)
 - macOS 双 runner 方案参考 motrix-next: `macos-latest` (ARM) + `macos-15-intel` (x86_64)
 - brew 的 `$XZ_DIR` 变量名在 GitHub Actions YAML 中会被特殊处理 → 用绝对路径替代

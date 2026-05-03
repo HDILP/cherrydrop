@@ -68,10 +68,13 @@ cherrydrop/
 - 用于 CI smoke test、本地快速验证
 
 ### 打包策略
-- Nuitka 4.0.8 → `--mode=app` (macOS) / `--mode=onefile` (Linux/Windows)
+- Nuitka 4.0.8 → `--mode=app` (macOS) / `--mode=standalone` (Linux/Windows)
+- 准备阶段: Qt 运行时冗余 DLL/.so 清理 + UPX 压缩二进制
+- Linux 最终产物: `.tar.xz`（xz -9e 压缩）
+- Windows 最终产物: 7z SFX 自解压单文件 `.exe`（静默解压，打包前先 UPX + Qt 清理）
+- macOS 最终产物: `.app.zip`（双架构各一个，只含对应架构 aria2c）
 - macOS 双 runner: `macos-latest` (ARM) + `macos-15-intel` (x86_64)
 - 每个 .app 只含对应架构的 aria2c
-- **PyQt5 黑名单全覆盖**: 44 个无用模块列在 `--nofollow-import-to`，只留 QtWidgets/Core/Gui（Nuitka 4.0.8 通配符白名单不生效，改显式黑名单兜底）
 
 ## 已知修复
 

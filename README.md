@@ -35,7 +35,7 @@ bash scripts/build.sh          # Linux/macOS
 # 方式二: 手动构建
 pip install nuitka requests
 python -m nuitka \
-    --mode=onefile \
+    --mode=standalone \
     --enable-plugin=pyqt5 \
     --follow-imports \
     --nofollow-import-to=PyQt5.QtNetwork,PyQt5.QtWebEngine,PyQt5.QtMultimedia,PyQt5.QtMultimediaWidgets,PyQt5.QtPrintSupport,PyQt5.QtSvg,PyQt5.QtWebSockets,PyQt5.QtQuick,PyQt5.QtQuick3D,PyQt5.QtQuickWidgets,PyQt5.QtQml,PyQt5.QtQmlModels,PyQt5.QtDBus,PyQt5.QtBluetooth,PyQt5.QtNfc,PyQt5.QtSensors,PyQt5.QtPositioning,PyQt5.QtLocation,PyQt5.QtSql,PyQt5.QtXml,PyQt5.QtXmlPatterns,PyQt5.QtHelp,PyQt5.QtDesigner,PyQt5.QtUiTools,PyQt5.QtTest,PyQt5.QtSerialPort,PyQt5.QtRemoteObjects,PyQt5.QtTextToSpeech,PyQt5.QtX11Extras,PyQt5.QtOpenGL,PyQt5.QtWebChannel,PyQt5.QtConcurrent \
@@ -99,7 +99,7 @@ cherrydrop/
 | RPC 通信 | aria2p 0.12+ | JSON-RPC 封装，简洁 API |
 | BT 优化 | motrix-next 参数 | DHT/PEX/LPD，伪装 Transmission |
 | Tracker | 每日自动更新 | CDN 镜像源，热注入 aria2 |
-| 打包 | Nuitka --mode=onefile | 单文件便携分发 |
+| 打包 | Nuitka `--mode=standalone` + Qt 清理 + UPX | 跨平台, Linux: .tar.xz, macOS: .app.zip, Windows: 7z SFX .exe |
 | CI/CD | GitHub Actions | Ubuntu/macOS/Windows 三平台 |
 
 ## CLI 参数
