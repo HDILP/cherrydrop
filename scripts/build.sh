@@ -11,11 +11,11 @@ case "$(uname -s)" in
   *)       echo "Unknown platform"; exit 1 ;;
 esac
 
-# macOS 用 app 模式，其他用 onefile
+# macOS 用 app 模式，其他用 standalone
 if [[ "$(uname -s)" == "Darwin" ]]; then
   NUITKA_MODE="--mode=app"
 else
-  NUITKA_MODE="--mode=onefile"
+  NUITKA_MODE="--standalone"
 fi
 
 # 构建

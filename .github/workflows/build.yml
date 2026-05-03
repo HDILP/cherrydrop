@@ -35,7 +35,7 @@ jobs:
 
       - name: Install Nuitka dependencies (Linux)
         if: runner.os == 'Linux'
-        run: sudo apt-get install -y patchelf ccache
+        run: sudo apt-get install -y patchelf ccache xz-utils upx-ucl
 
       - name: Install Nuitka dependencies (macOS)
         if: runner.os == 'macOS'
@@ -69,7 +69,7 @@ jobs:
             VERSION="0.0.0"
           fi
 
-          NUITKA_MODE="--mode=onefile"
+          NUITKA_MODE="--standalone"
           if [[ "${{ runner.os }}" == "macOS" ]]; then
             NUITKA_MODE="--mode=app"
           fi
@@ -105,28 +105,96 @@ jobs:
             --company-name=CherryDrop \
             main.py
 
-      - name: Prepare artifacts (clean up Nuitka build intermediates)
+      - name: Prepare artifacts (clean up Nuitka build intermediates + strip Qt fat)
         shell: bash
         run: |
+          set -e
           echo "=== Before cleanup ==="
           ls -la dist/
+
+          # 删除构建中间文件
           rm -rf dist/*.onefile-build dist/*.dist dist/*.build 2>/dev/null || true
-          echo "=== After cleanup ==="
-          ls -la dist/
-          # 统一命名输出文件
+
+          # ----------------------------------------------------------------
+          # Qt 冗余框架清理（所有平台通用）
+          # ----------------------------------------------------------------
+          cleanup_qt_fat() {
+            local TARGET="$1"
+            local ext
+            case "${{ runner.os }}" in
+              Linux)   ext=".so*" ;;
+              macOS)   ext="" ;;   # macOS 上是裸文件名（无后缀）/ 或 .dylib
+              Windows) ext=".dll" ;;
+            esac
+
+            # QML 全家桶（Widgets 应用不需要 QML 运行时）
+            for m in QtQml QtQuick QtQuick3D QtQuickWidgets QtQmlModels; do
+              find "$TARGET" -maxdepth 2 -name "${m}${ext}" -exec rm -f {} + 2>/dev/null || true
+            done
+
+            # 媒体/网络/数据库等无用模块
+            for m in QtMultimedia QtMultimediaWidgets QtNetwork QtWebSockets \
+                     QtWebChannel QtBluetooth QtNfc QtSensors QtPositioning QtLocation \
+                     QtSql QtXml QtXmlPatterns QtHelp QtDesigner QtUiTools \
+                     QtTest QtSerialPort QtRemoteObjects QtTextToSpeech \
+                     QtX11Extras QtConcurrent QtOpenGL QtSvg QtDBus; do
+              find "$TARGET" -maxdepth 2 -name "${m}${ext}" -exec rm -f {} + 2>/dev/null || true
+            done
+
+            # Qt3D 系
+            for m in Qt3DCore Qt3DRender Qt3DInput Qt3DLogic Qt3DAnimation Qt3DExtras; do
+              find "$TARGET" -maxdepth 2 -name "${m}${ext}" -exec rm -f {} + 2>/dev/null || true
+            done
+
+            # 其他模块
+            for m in QtScxml QtStateMachine QtCharts QtDataVisualization QtNetworkAuth; do
+              find "$TARGET" -maxdepth 2 -name "${m}${ext}" -exec rm -f {} + 2>/dev/null || true
+            done
+
+            # 清理无用 Qt 插件
+            local PLUGIN_DIR
+            PLUGIN_DIR=$(find "$TARGET" -type d -name "qt-plugins" 2>/dev/null | head -1)
+            if [[ -n "$PLUGIN_DIR" ]]; then
+              echo ">>> Cleaning plugins in: $PLUGIN_DIR"
+              rm -rf "$PLUGIN_DIR/mediaservice" 2>/dev/null || true
+              rm -rf "$PLUGIN_DIR/printsupport" 2>/dev/null || true
+              # 删除 WebGL 平台插件（桌面应用不需要）
+              find "$PLUGIN_DIR/platforms" -name "*webgl*" -delete 2>/dev/null || true
+            fi
+          }
+
+          # ----------------------------------------------------------------
+          # 平台特定的打包流程
+          # ----------------------------------------------------------------
           if [[ "${{ runner.os }}" == "Linux" ]]; then
-            mv dist/main.bin dist/CherryDrop 2>/dev/null || true
+            # --standalone 产出是 dist/main.dist/
+            TARGET="dist/main.dist"
+            echo ">>> Cleaning Qt fat in: $TARGET"
+            cleanup_qt_fat "$TARGET"
+
+            echo ">>> UPX compressing binaries..."
+            upx --best "$TARGET/main" 2>/dev/null || true
+            upx --best "$TARGET/resources/bin/linux/aria2c" 2>/dev/null || true
+
+            echo ">>> After Qt cleanup:"
+            ls -lh "$TARGET/" 2>/dev/null | grep -E "^(.*Qt|total)"
+
+            # 重命名目录并打包 .tar.xz
+            mv "$TARGET" "dist/CherryDrop"
+            echo ">>> Packaging CherryDrop.tar.xz ..."
+            cd dist && tar -cJf "CherryDrop.tar.xz" "CherryDrop" && rm -rf "CherryDrop"
+            cd ..
+            echo ">>> Final dist/ :"
+            ls -lh dist/
+
           elif [[ "${{ runner.os }}" == "macOS" ]]; then
             (cd dist && APP_DIR=$(ls -d *.app 2>/dev/null | head -1) && \
              if [[ -n "$APP_DIR" ]]; then \
                find "$APP_DIR" -name '*__mypyc.*' -delete 2>/dev/null || true && \
                mv "$APP_DIR" "CherryDrop.app" && \
                APP="CherryDrop.app/Contents/MacOS" && \
-               # NOTE:
-               # 不再手动删除 Qt 框架/插件。此前在 macOS Intel 产物上会触发
-               # "QGuiApplicationPrivate::createPlatformIntegration()" fatal，
-               # 根因是平台插件依赖被过度清理后无法加载。
-               # 为稳定优先，保留 Nuitka 默认收集结果。
+               echo ">>> Cleaning Qt fat in: $APP" && \
+               cleanup_qt_fat "$APP" && \
                # 只保留当前架构的 aria2 二进制
                BIN_PATH="$APP/resources/bin/darwin" && \
                if [[ "${{ runner.arch }}" == "ARM64" ]]; then \
@@ -138,15 +206,29 @@ jobs:
                  rm -f "$BIN_PATH/aria2c-arm64" && \
                  ZIP_NAME="CherryDrop-macOS-x86_64.zip"; \
                fi && \
+               echo ">>> Packaging $ZIP_NAME ..." && \
                zip -r "$ZIP_NAME" "CherryDrop.app" && \
                rm -rf "CherryDrop.app"; \
              fi)
+            echo ">>> Final dist/ :"
+            ls -lh dist/
+
           elif [[ "${{ runner.os }}" == "Windows" ]]; then
-            mv dist/main.exe dist/CherryDrop.exe 2>/dev/null || true
-            mv dist/CherryDrop.exe dist/CherryDrop.exe 2>/dev/null || true
+            TARGET="dist/main.dist"
+            echo ">>> Cleaning Qt fat in: $TARGET"
+            cleanup_qt_fat "$TARGET"
+
+            echo ">>> After Qt cleanup:"
+            ls -lh "$TARGET/" 2>/dev/null | grep -E "^(.*Qt|total)"
+
+            # 重命名目录并打包 .zip
+            mv "$TARGET" "dist/CherryDrop"
+            echo ">>> Packaging CherryDrop.zip ..."
+            cd dist && 7z a -tzip "CherryDrop.zip" "CherryDrop" >/dev/null && rm -rf "CherryDrop"
+            cd ..
+            echo ">>> Final dist/ :"
+            ls -lh dist/
           fi
-          echo "=== Final dist/ ==="
-          ls -la dist/
 
       - name: Smoke test
         shell: bash
@@ -157,14 +239,18 @@ jobs:
           TEST_URL="https://raw.githubusercontent.com/HDILP/cherrydrop/main/README.md"
 
           if [[ "${{ runner.os }}" == "Linux" ]]; then
+            echo "--- Unpacking CherryDrop.tar.xz ---"
+            tar -xJf "CherryDrop.tar.xz"
+            cd CherryDrop
+
             # ── --version ──
             echo "--- Test: --version ---"
-            ./CherryDrop --version
+            ./main --version
 
             # ── xvfb GUI smoke (5s timeout → 124 = OK) ──
             echo "--- Test: xvfb GUI (5s timeout) ---"
             sudo apt-get install -y -qq xvfb
-            xvfb-run -a timeout 5 ./CherryDrop 2>&1 && rc=$? || rc=$?
+            xvfb-run -a timeout 5 ./main 2>&1 && rc=$? || rc=$?
             if [[ $rc -eq 124 ]]; then
               echo "✓ GUI started and ran 5s without crash"
             else
@@ -173,7 +259,7 @@ jobs:
 
             # ── Download test ──
             echo "--- Test: download ---"
-            ./CherryDrop --download-url "$TEST_URL"
+            ./main --download-url "$TEST_URL"
 
           elif [[ "${{ runner.os }}" == "macOS" ]]; then
             ZIP=$(ls *.zip 2>/dev/null | head -1)
@@ -210,12 +296,16 @@ jobs:
             rm -rf testapp
 
           elif [[ "${{ runner.os }}" == "Windows" ]]; then
+            echo "--- Unpacking CherryDrop.zip ---"
+            7z x -y "CherryDrop.zip" >/dev/null
+            cd CherryDrop
+
             echo "--- Test: --version ---"
-            ./CherryDrop.exe --version
+            ./main --version
 
             # ── Download test ──
             echo "--- Test: download ---"
-            ./CherryDrop.exe --download-url "$TEST_URL"
+            ./main --download-url "$TEST_URL"
           fi
 
           echo "=== ✅ All smoke tests passed ==="
@@ -224,7 +314,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: CherryDrop-${{ runner.os }}-${{ runner.arch }}
-          path: dist/*
+          path: dist/*.tar.xz dist/*.zip
           retention-days: 1
 
   release:
