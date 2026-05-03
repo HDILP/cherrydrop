@@ -185,7 +185,8 @@ jobs:
             echo "--- Unzipping: $ZIP ---"
             unzip -q "$ZIP" -d testapp
             BUNDLE="testapp/CherryDrop.app"
-            BINARY="$BUNDLE/Contents/MacOS/CherryDrop"
+            # Nuitka --mode=app 内部二进制名来自源文件名 (main.py → main)
+            BINARY="$BUNDLE/Contents/MacOS/main"
 
             echo "--- Test: --version ---"
             "$BINARY" --version

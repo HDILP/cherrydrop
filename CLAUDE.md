@@ -26,13 +26,28 @@
 
 ### 全部迭代已完成 🎉
 
-### CI/CD 状态 (2026-05-02)
+### CLI 参数 (v0.1.0+)
+- `CherryDrop --version` — 显示版本号并退出（无需显示器）
+- `CherryDrop -h / --help` — 显示帮助
+- `CherryDrop -d <URL> / --download-url <URL>` — 无 GUI 下载测试（CI 用）
+  - 启动 aria2c RPC → add_uri → 轮询完成 → 验证文件存在
+  - 失败时 exit 1，不创建临时文件残留
+- 这三个参数在 `QApplication` 创建前截获，无需显示器
+
+### CI/CD 状态 (2026-05-03)
+- ✅ **触发方式**: push main / push tag v* / workflow_dispatch
 - ✅ Linux (ubuntu-latest) — 构建通过
 - ✅ Windows (windows-latest) — 构建通过
 - ✅ macOS ARM64 (macos-latest) — 构建通过
 - ✅ macOS Intel (macos-15-intel) — ✅ Run #47 通过 (uv Python 方案)
 - ✅ **双 macOS 矩阵**: Intel + ARM 各产一个 .zip, 含对应架构 aria2c
 - ✅ **自动发布**: 每次 push/main 构建 → 预发布 `build-<run_number>`；tag 推送 → 正式 release
+- ✅ **Smoke test** (构建后自动执行，失败 = 不上传 artifact):
+  - `--version` 验证二进制可执行
+  - Linux: xvfb GUI 5s 不崩溃 + 真实 HTTP 下载测试
+  - macOS: .app bundle 完整性 + aria2c 捆绑检查 + 真实 HTTP 下载测试
+  - Windows: --version + 真实 HTTP 下载测试
+  - 测试 URL: repo 自身 README.md (GitHub raw)
 - ⚠️ **体积**: PyQt5 ~50-70MB 基线, `--nofollow-import-to=PyQt5.QtWebEngine,...` 已排除大模块
 
 **CI 踩坑记录:**

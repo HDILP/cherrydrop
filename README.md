@@ -11,7 +11,7 @@
 - **中国网络优化**: CDN Tracker 源、伪装 Transmission 客户端、代理支持、防 QoS 限速
 - **毛玻璃 UI**: 樱花粉色 (`#ffaab2`) 主题，纯图标操作，系统托盘常驻，2 秒实时刷新
 - **便携单文件**: Nuitka 编译，aria2 二进制内置，开箱即用
-- **CI/CD**: GitHub Actions 三平台自动构建
+- **CI/CD**: GitHub Actions 三平台自动构建 + **Smoke test**（`--version`、GUI 启动、真实下载）
 
 ## 快速开始
 
@@ -101,6 +101,18 @@ cherrydrop/
 | Tracker | 每日自动更新 | CDN 镜像源，热注入 aria2 |
 | 打包 | Nuitka --mode=onefile | 单文件便携分发 |
 | CI/CD | GitHub Actions | Ubuntu/macOS/Windows 三平台 |
+
+## CLI 参数
+
+```bash
+CherryDrop                      # 正常启动 GUI
+CherryDrop --version            # 显示版本号（无需显示器）
+CherryDrop -h | --help          # 显示帮助
+CherryDrop -d <URL>             # 无头下载测试（CI 用）
+```
+
+`-d` / `--download-url` 会启动 aria2c RPC 下载指定文件并验证，失败则 exit 1。
+用于 CI 自动测试，无需 X11/显示器。
 
 ## 依赖
 
