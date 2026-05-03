@@ -177,7 +177,7 @@ jobs:
             upx --best "$TARGET/resources/bin/linux/aria2c" 2>/dev/null || true
 
             echo ">>> After Qt cleanup:"
-            ls -lh "$TARGET/" 2>/dev/null | grep -E "^(.*Qt|total)"
+            ls -lh "$TARGET/" 2>/dev/null || true
 
             # 重命名目录并打包 .tar.xz
             mv "$TARGET" "dist/CherryDrop"
@@ -223,7 +223,7 @@ jobs:
             upx --best "$TARGET/resources/bin/win64/aria2c.exe" 2>/dev/null || true
 
             echo ">>> After Qt cleanup:"
-            ls -lh "$TARGET/" 2>/dev/null | grep -E "^(.*Qt|total)"
+            ls -lh "$TARGET/" 2>/dev/null || true
 
             # 创建自解压单文件 exe
             mv "$TARGET" "dist/CherryDrop"
