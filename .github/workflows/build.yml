@@ -131,6 +131,9 @@ jobs:
             # QML 全家桶（Widgets 应用不需要 QML 运行时）
             for m in QtQml QtQuick QtQuick3D QtQuickWidgets QtQmlModels; do
               find "$TARGET" -maxdepth 2 -name "${m}${ext}" -exec rm -f {} + 2>/dev/null || true
+              # Windows: qt5 prefix + lowercase (qt5qml.dll)
+              local win_n="${m#Qt}"; win_n="qt5${win_n,,}"
+              find "$TARGET" -maxdepth 2 -name "${win_n}${ext}" -exec rm -f {} + 2>/dev/null || true
             done
 
             # 媒体/网络/数据库等无用模块
@@ -140,16 +143,22 @@ jobs:
                      QtTest QtSerialPort QtRemoteObjects QtTextToSpeech \
                      QtX11Extras QtConcurrent QtOpenGL QtSvg QtDBus; do
               find "$TARGET" -maxdepth 2 -name "${m}${ext}" -exec rm -f {} + 2>/dev/null || true
+              local win_n="${m#Qt}"; win_n="qt5${win_n,,}"
+              find "$TARGET" -maxdepth 2 -name "${win_n}${ext}" -exec rm -f {} + 2>/dev/null || true
             done
 
             # Qt3D 系
             for m in Qt3DCore Qt3DRender Qt3DInput Qt3DLogic Qt3DAnimation Qt3DExtras; do
               find "$TARGET" -maxdepth 2 -name "${m}${ext}" -exec rm -f {} + 2>/dev/null || true
+              local win_n="${m#Qt}"; win_n="qt5${win_n,,}"
+              find "$TARGET" -maxdepth 2 -name "${win_n}${ext}" -exec rm -f {} + 2>/dev/null || true
             done
 
             # 其他模块
             for m in QtScxml QtStateMachine QtCharts QtDataVisualization QtNetworkAuth; do
               find "$TARGET" -maxdepth 2 -name "${m}${ext}" -exec rm -f {} + 2>/dev/null || true
+              local win_n="${m#Qt}"; win_n="qt5${win_n,,}"
+              find "$TARGET" -maxdepth 2 -name "${win_n}${ext}" -exec rm -f {} + 2>/dev/null || true
             done
 
             # 清理无用 Qt 插件
@@ -254,7 +263,7 @@ jobs:
 
             # 构建 7z 归档 + 自解压
             cd dist
-            7z a -mx9 CherryDrop.7z CherryDrop\ >/dev/null
+            7z a -mx9 CherryDrop.7z CherryDrop >/dev/null
             rm -rf CherryDrop
 
             # 选择 SFX 模块: 优先 7zS.sfx (静默), 回退 7z.sfx (带进度条)
