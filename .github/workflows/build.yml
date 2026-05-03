@@ -146,6 +146,77 @@ jobs:
           echo "=== Final dist/ ==="
           ls -la dist/
 
+      - name: Smoke test
+        shell: bash
+        run: |
+          set -e
+          cd dist
+          echo "=== 🧪 CherryDrop Smoke Test ==="
+          TEST_URL="https://raw.githubusercontent.com/HDILP/cherrydrop/main/README.md"
+
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            # ── --version ──
+            echo "--- Test: --version ---"
+            ./CherryDrop --version
+
+            # ── xvfb GUI smoke (5s timeout → 124 = OK) ──
+            echo "--- Test: xvfb GUI (5s timeout) ---"
+            sudo apt-get install -y -qq xvfb
+            xvfb-run -a timeout 5 ./CherryDrop 2>&1 && rc=$? || rc=$?
+            if [[ $rc -eq 124 ]]; then
+              echo "✓ GUI started and ran 5s without crash"
+            else
+              exit $rc
+            fi
+
+            # ── Download test ──
+            echo "--- Test: download ---"
+            ./CherryDrop --download-url "$TEST_URL"
+
+          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+            ZIP=$(ls *.zip 2>/dev/null | head -1)
+            if [[ -z "$ZIP" ]]; then
+              echo "ERROR: no zip found in dist/"
+              ls -la
+              exit 1
+            fi
+            echo "--- Unzipping: $ZIP ---"
+            unzip -q "$ZIP" -d testapp
+            BUNDLE="testapp/CherryDrop.app"
+            BINARY="$BUNDLE/Contents/MacOS/CherryDrop"
+
+            echo "--- Test: --version ---"
+            "$BINARY" --version
+
+            echo "--- Test: aria2c bundled ---"
+            ARIA2_DIR="$BUNDLE/Contents/MacOS/resources/bin/darwin"
+            if ls "$ARIA2_DIR"/aria2c* 1>/dev/null 2>&1; then
+              file "$ARIA2_DIR"/aria2c*
+              echo "✓ aria2c binary found"
+            else
+              echo "✗ aria2c NOT found in $ARIA2_DIR"
+              find "$BUNDLE" -name "aria2c*" 2>/dev/null
+              exit 1
+            fi
+
+            # ── Download test ──
+            echo "--- Test: download ---"
+            "$BINARY" --download-url "$TEST_URL"
+
+            echo "--- Cleanup ---"
+            rm -rf testapp
+
+          elif [[ "${{ runner.os }}" == "Windows" ]]; then
+            echo "--- Test: --version ---"
+            ./CherryDrop.exe --version
+
+            # ── Download test ──
+            echo "--- Test: download ---"
+            ./CherryDrop.exe --download-url "$TEST_URL"
+          fi
+
+          echo "=== ✅ All smoke tests passed ==="
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
