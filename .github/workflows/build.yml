@@ -167,8 +167,28 @@ jobs:
           # 平台特定的打包流程
           # ----------------------------------------------------------------
           if [[ "${{ runner.os }}" == "Linux" ]]; then
-            # --standalone 产出是 dist/main.dist/
-            TARGET="dist/main.dist"
+            # 先看看 dist 结构
+            echo ">>> Debug: dist/ contents:"
+            ls -la dist/
+            echo ">>> Debug: looking for standalone dir..."
+            find dist -name "main*" -type d 2>/dev/null || echo "(no main* dirs)"
+            find dist -name "*.dist" -type d 2>/dev/null || echo "(no *.dist dirs)"
+            ls -la . 2>/dev/null | head -5
+
+            # 找 standalone 输出目录
+            TARGET=""
+            for d in "dist/main.dist" "dist/CherryDrop.dist" "main.dist"; do
+              if [[ -d "$d" ]]; then
+                TARGET="$d"
+                echo ">>> Found standalone dir: $TARGET"
+                break
+              fi
+            done
+            if [[ -z "$TARGET" ]]; then
+              echo "ERROR: cannot find standalone output directory"
+              ls -laR dist/ 2>/dev/null | head -40
+              exit 1
+            fi
             echo ">>> Cleaning Qt fat in: $TARGET"
             cleanup_qt_fat "$TARGET"
 
