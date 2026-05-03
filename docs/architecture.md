@@ -93,11 +93,16 @@ cherrydrop/
   - Windows: --version + 真实 HTTP 下载
 - ✅ **触发方式**: push main / push tag v* / workflow_dispatch
 
-## CI 踩坑 (Nuitka #3777)
+## CI 踩坑
 
+### Nuitka #3777 — macOS + Homebrew OpenSSL
 Intel macOS 的 Nuitka 4.0.8 dylib 扫描器遇见链接 Homebrew OpenSSL 的 Python 会 FATAL crash。
 **最终方案**：全线 macOS 使用 uv Python (standalone Python 自带 OpenSSL，不依赖 Homebrew)。
 详见 `CLAUDE.md` 踩坑记录。
+
+### macOS .app 二进制命名
+Nuitka `--mode=app` 打包后，.app 内部二进制名来自源文件名（`main.py` → `Contents/MacOS/main`），不是 `--product-name`。
+Smoke test 和任何引用 `.app` 内部文件的脚本要写对路径：`Contents/MacOS/main` 而非 `Contents/MacOS/CherryDrop`。
 
 ## 发布
 

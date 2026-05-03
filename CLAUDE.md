@@ -59,6 +59,7 @@
 - macOS 双 runner 方案参考 motrix-next: `macos-latest` (ARM) + `macos-15-intel` (x86_64)
 - brew 的 `$XZ_DIR` 变量名在 GitHub Actions YAML 中会被特殊处理 → 用绝对路径替代
 - `bash -e` 模式下 if 条件为 false 会直接退出 → 加 `|| true`
+- **macOS `.app` 内部二进制名来自源文件名**：`main.py` → `CherryDrop.app/Contents/MacOS/main`。Smoke test 中路径必须写 `main` 而非 `CherryDrop`
 
 ### 发布
 - ✅ **v0.1.0 已发布**: https://github.com/HDILP/cherrydrop/releases/tag/v0.1.0
