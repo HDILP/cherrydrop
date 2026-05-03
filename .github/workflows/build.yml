@@ -392,7 +392,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: CherryDrop-${{ runner.os }}-${{ runner.arch }}
-          path: dist/*.tar.xz dist/*.zip dist/*.exe
+          path: |
+            dist/*.tar.xz
+            dist/*.zip
+            dist/*.exe
           retention-days: 1
 
   release:
