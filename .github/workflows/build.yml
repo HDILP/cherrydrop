@@ -218,13 +218,45 @@ jobs:
             echo ">>> Cleaning Qt fat in: $TARGET"
             cleanup_qt_fat "$TARGET"
 
+            echo ">>> UPX compressing binaries..."
+            upx --best "$TARGET/main.exe" 2>/dev/null || true
+            upx --best "$TARGET/resources/bin/win64/aria2c.exe" 2>/dev/null || true
+
             echo ">>> After Qt cleanup:"
             ls -lh "$TARGET/" 2>/dev/null | grep -E "^(.*Qt|total)"
 
-            # 重命名目录并打包 .zip
+            # 创建自解压单文件 exe
             mv "$TARGET" "dist/CherryDrop"
-            echo ">>> Packaging CherryDrop.zip ..."
-            cd dist && 7z a -tzip "CherryDrop.zip" "CherryDrop" >/dev/null && rm -rf "CherryDrop"
+
+            # SFX config: 静默解压 + 自动运行
+            cat > dist/sfx_conf.txt << 'SFXEOF'
+;!@Install@!UTF-8!
+Title="CherryDrop 樱花下载器"
+RunProgram="CherryDrop\main.exe"
+GUIMode="2"
+;!@InstallEnd@!
+SFXEOF
+
+            # 构建 7z 归档 + 自解压
+            cd dist
+            7z a -mx9 CherryDrop.7z CherryDrop\ >/dev/null
+            rm -rf CherryDrop
+
+            # 选择 SFX 模块: 优先 7zS.sfx (静默), 回退 7z.sfx (带进度条)
+            SFX=""
+            for m in "7zS.sfx" "7z.sfx"; do
+              p="/c/Program Files/7-Zip/$m"
+              [[ -f "$p" ]] && SFX="$p" && break
+            done
+            if [[ -n "$SFX" ]]; then
+              echo ">>> Building SFX with: $SFX"
+              cat "$SFX" sfx_conf.txt CherryDrop.7z > CherryDrop.exe
+              rm -f CherryDrop.7z sfx_conf.txt
+            else
+              echo "WARNING: no 7z SFX module found, falling back to .zip"
+              # 7z couldn't find SFX module, just keep as .7z
+              mv CherryDrop.7z CherryDrop.7z
+            fi
             cd ..
             echo ">>> Final dist/ :"
             ls -lh dist/
@@ -296,8 +328,15 @@ jobs:
             rm -rf testapp
 
           elif [[ "${{ runner.os }}" == "Windows" ]]; then
-            echo "--- Unpacking CherryDrop.zip ---"
-            7z x -y "CherryDrop.zip" >/dev/null
+            # SFX (.exe) 或 fallback (.7z)
+            PACKAGE=$(ls CherryDrop.exe CherryDrop.7z 2>/dev/null | head -1)
+            if [[ -z "$PACKAGE" ]]; then
+              echo "ERROR: no package found"
+              ls -la
+              exit 1
+            fi
+            echo "--- Unpacking: $PACKAGE ---"
+            7z x -y "$PACKAGE" -oCherryDrop >/dev/null
             cd CherryDrop
 
             echo "--- Test: --version ---"
@@ -314,7 +353,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: CherryDrop-${{ runner.os }}-${{ runner.arch }}
-          path: dist/*.tar.xz dist/*.zip
+          path: dist/*.tar.xz dist/*.zip dist/*.exe
           retention-days: 1
 
   release:
