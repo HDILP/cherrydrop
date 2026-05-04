@@ -93,7 +93,7 @@ cherrydrop/
 - ✅ **Smoke test**（构建后、上传前执行，失败则不上传）：
   - Linux: xvfb GUI 5s + 真实 HTTP 下载
   - macOS: .app bundle 完整性 + aria2c 检查 + 真实 HTTP 下载
-  - Windows: --version + 真实 HTTP 下载
+  - Windows: --version + aria2c 捆绑检查 + 真实 HTTP 下载
 - ✅ **触发方式**: push main / push tag v* / workflow_dispatch
 
 ## CI 踩坑

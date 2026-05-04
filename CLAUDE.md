@@ -51,7 +51,7 @@
   - Qt 运行时清理: `qt5*.dll`（小写 + qt5 前缀）
   - UPX 压缩: `main.exe` + `aria2c.exe`
   - 最终产物: 7z SFX 自解压 `CherryDrop.exe` (~15MB)
-  - Smoke: `--version` ✓ + 真实下载 ✓
+  - Smoke: `--version` ✓ + aria2c 捆绑检查 ✓ + 真实下载 ✓
 - ✅ **自动发布**: 每次 push/main 构建 → 预发布 `build-<run_number>`；tag 推送 → 正式 release
   - Release job 需 `actions/checkout@v4` + `download-artifact@v4`
   - `upload-artifact@v4` 多路径需用 YAML 多行格式（空格分隔在 v4 中不生效）
@@ -59,7 +59,7 @@
   - `--version` 验证二进制可执行
   - Linux: xvfb GUI 5s 不崩溃（xcb 插件缺失时跳过） + 真实 HTTP 下载
   - macOS: .app bundle 完整性 + aria2c 捆绑检查 + 真实 HTTP 下载
-  - Windows: --version + 真实 HTTP 下载
+  - Windows: --version + aria2c 捆绑检查 + 真实 HTTP 下载
   - 测试 URL: repo 自身 README.md (GitHub raw)
 - ✅ **PyQt5 黑名单全覆盖**: 44 个无用模块全部列在 `--nofollow-import-to`，只留 QtWidgets/Core/Gui
 - ✅ **Qt 运行时清理三平台命名差异**:
@@ -84,6 +84,7 @@
   - Windows: `qt5<module>.dll`（小写 + qt5 前缀）
   - macOS: `Qt<Module>`（裸文件名）
 - **Nuitka 4.0.8 通配符不覆盖白名单**：`--nofollow-import-to=PyQt5.*` + `--follow-import-to=QtWidgets` 不可行，通配符会连带白名单模块也排除。必须用显式黑名单逐项列出不需要的模块
+- **`--include-data-dir` 含 `=` 路径导致 aria2c 未打包（Windows）**：`--include-data-dir=resources/bin/win64=resources/bin/win64` 中源路径含 `=` 导致 Nuitka 解析异常，aria2c 二进制从未实际打包进 Windows 产物。Windows smoke test 因 GitHub Actions runner 预装 aria2c（`shutil.which` 回退命中系统 PATH）而侥幸通过。**最终方案**：改用 `--include-data-file` 逐文件指定，彻底避免路径中 `=` 的歧义。需同时在 Windows smoke test 中加 aria2c 存在检查。
 
 ### 发布
 - ✅ **v0.1.0 已发布**: https://github.com/HDILP/cherrydrop/releases/tag/v0.1.0
