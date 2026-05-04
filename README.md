@@ -116,7 +116,7 @@ CherryDrop -d <URL>             # 无头下载测试（CI 用）
 
 ## 依赖
 
-- Python 3.10+
+- Python 3.8+
 - PyQt5 >= 5.15.0
 - aria2p >= 0.12.0
 - requests >= 2.28.0

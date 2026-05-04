@@ -22,10 +22,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.10
+      - name: Set up Python 3.8
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.8'
 
       - name: Install dependencies
         run: |
@@ -47,8 +47,8 @@ jobs:
           # Nuitka 4.0.8's dylib scanner chokes on Homebrew-linked Python (bug #3777).
           # uv standalone Python has bundled OpenSSL → no Homebrew dep, no scan crash.
           pip install uv
-          uv python install 3.10
-          uv venv --python 3.10
+          uv python install 3.8
+          uv venv --python 3.8
           uv pip install -r requirements.txt
           uv pip install nuitka requests
 

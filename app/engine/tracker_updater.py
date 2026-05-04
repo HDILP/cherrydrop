@@ -8,7 +8,7 @@
 import logging
 import threading
 import time
-from typing import Optional, Callable
+from typing import List, Optional, Callable
 import requests
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ class TrackerUpdater:
     def __init__(self, sources: list = None, proxy: str = None):
         self.sources = sources or DEFAULT_SOURCES.copy()
         self._proxy = proxy
-        self._trackers: list[str] = []
+        self._trackers: List[str] = []
         self._last_update = 0.0
         self._timer: Optional[threading.Timer] = None
         self._running = False
@@ -43,10 +43,10 @@ class TrackerUpdater:
     def set_sources(self, sources: list):
         self.sources = sources
 
-    def fetch(self) -> list[str]:
+    def fetch(self) -> List[str]:
         """从所有数据源拉取 tracker 列表，合并去重"""
-        all_trackers: list[str] = []
-        failures: list[str] = []
+        all_trackers: List[str] = []
+        failures: List[str] = []
 
         for url in self.sources:
             try:
