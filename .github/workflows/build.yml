@@ -74,14 +74,15 @@ jobs:
             NUITKA_MODE="--mode=app"
           fi
 
-          # 只打包当前平台对应的 aria2 二进制
+          # 打包当前平台 aria2 二进制（逐文件指定，比 --include-data-dir 更可靠）
           if [[ "${{ runner.os }}" == "Linux" ]]; then
-            BIN_DIR="resources/bin/linux=resources/bin/linux"
+            INCLUDE_BIN="--include-data-file=resources/bin/linux/aria2c=resources/bin/linux/aria2c --include-data-file=resources/bin/linux/aria2c-arm64=resources/bin/linux/aria2c-arm64"
           elif [[ "${{ runner.os }}" == "macOS" ]]; then
-            BIN_DIR="resources/bin/darwin=resources/bin/darwin"
+            INCLUDE_BIN="--include-data-file=resources/bin/darwin/aria2c=resources/bin/darwin/aria2c --include-data-file=resources/bin/darwin/aria2c-arm64=resources/bin/darwin/aria2c-arm64"
           else
-            BIN_DIR="resources/bin/win64=resources/bin/win64"
+            INCLUDE_BIN="--include-data-file=resources/bin/win64/aria2c.exe=resources/bin/win64/aria2c.exe --include-data-file=resources/bin/win64/aria2c-arm64.exe=resources/bin/win64/aria2c-arm64.exe"
           fi
+          echo ">> aria2c inclusion flags: $INCLUDE_BIN"
 
           NUITKA_OPTS=""
           if [[ "${{ runner.os }}" == "Windows" ]]; then
@@ -95,7 +96,7 @@ jobs:
             --follow-imports \
             --nofollow-import-to=PyQt5.QtNetwork,PyQt5.QtWebEngine,PyQt5.QtMultimedia,PyQt5.QtMultimediaWidgets,PyQt5.QtPrintSupport,PyQt5.QtSvg,PyQt5.QtWebSockets,PyQt5.QtQuick,PyQt5.QtQuick3D,PyQt5.QtQuickWidgets,PyQt5.QtQml,PyQt5.QtQmlModels,PyQt5.QtDBus,PyQt5.QtBluetooth,PyQt5.QtNfc,PyQt5.QtSensors,PyQt5.QtPositioning,PyQt5.QtLocation,PyQt5.QtSql,PyQt5.QtXml,PyQt5.QtXmlPatterns,PyQt5.QtHelp,PyQt5.QtDesigner,PyQt5.QtUiTools,PyQt5.QtTest,PyQt5.QtSerialPort,PyQt5.QtRemoteObjects,PyQt5.QtTextToSpeech,PyQt5.QtX11Extras,PyQt5.QtOpenGL,PyQt5.QtWebChannel,PyQt5.QtConcurrent,PyQt5.QtScxml,PyQt5.QtStateMachine,PyQt5.QtCharts,PyQt5.QtDataVisualization,PyQt5.QtNetworkAuth,PyQt5.Qt3DCore,PyQt5.Qt3DRender,PyQt5.Qt3DInput,PyQt5.Qt3DLogic,PyQt5.Qt3DAnimation,PyQt5.Qt3DExtras \
             --nofollow-import-to=tkinter,unittest,pdb,test,distutils,ensurepip,venv,lib2to3,idlelib,turtle,cgi,smtplib,poplib,imaplib,ftplib,telnetlib,nntplib \
-            --include-data-dir="$BIN_DIR" \
+            $INCLUDE_BIN \
             --include-data-file=resources/aria2.conf=resources/aria2.conf \
             --include-data-dir=resources/icons=resources/icons \
             --include-data-dir=resources/themes=resources/themes \
@@ -254,6 +255,9 @@ jobs:
 
           elif [[ "${{ runner.os }}" == "Windows" ]]; then
             TARGET="dist/main.dist"
+            echo ">>> Debug: aria2c in standalone:"
+            find "$TARGET" -name "aria2c*" -type f 2>/dev/null || echo "(not found)"
+
             echo ">>> Cleaning Qt fat in: $TARGET"
             cleanup_qt_fat "$TARGET"
 
@@ -365,7 +369,6 @@ jobs:
             rm -rf testapp
 
           elif [[ "${{ runner.os }}" == "Windows" ]]; then
-            # SFX (.exe) 或 fallback (.7z)
             PACKAGE=$(ls CherryDrop.exe 2>/dev/null | head -1) || true
             if [[ -z "$PACKAGE" ]]; then
               echo "ERROR: no package found"
@@ -377,6 +380,17 @@ jobs:
             # 所以直接解压到当前目录就行，不要用 -o 再套一层
             7z x -y "$PACKAGE" >/dev/null
             cd CherryDrop
+
+            echo "--- Test: aria2c bundled ---"
+            ARIA2_DIR="resources/bin/win64"
+            if ls "$ARIA2_DIR"/aria2c* 1>/dev/null 2>&1; then
+              file "$ARIA2_DIR"/aria2c*
+              echo "✓ aria2c binary found"
+            else
+              echo "✗ aria2c NOT found in $ARIA2_DIR"
+              find . -name "aria2c*" 2>/dev/null
+              exit 1
+            fi
 
             echo "--- Test: --version ---"
             ./main --version
